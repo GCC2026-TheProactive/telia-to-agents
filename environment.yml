@@ -16,6 +16,7 @@ dependencies:
   - geopandas
   - osmnx
   - rasterio
+  - rioxarray
   - shapely
 #  - geotiff=1.7.1
 
