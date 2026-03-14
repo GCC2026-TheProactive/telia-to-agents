@@ -1,0 +1,32 @@
+name: gcc2026
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - ipython
+  - jupyter
+
+  # Core scientific python
+  - numpy
+  - pandas
+  - scipy
+
+  # Geospatial libraries
+  - geopandas
+  - osmnx
+  - rasterio
+  - shapely
+#  - geotiff=1.7.1
+
+  # Machine learning
+  - scikit-learn
+
+  # Data access
+  - pathlib
+  - pandasql
+
+  # Plotting
+  - contextily
+  - folium
+  - matplotlib
