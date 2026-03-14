@@ -29,15 +29,15 @@ def geometry2gdf(geom: shapely.geometry.collection.GeometryCollection,
 
 
 # --------------------------------------------------------------------
-def read_shp(filename: str | pathlib.Path(),
-             crs: int | str = 4326
+def read_shp(filename: str | pathlib.PosixPath,
+             crs: int | str = None
              ) -> geopandas.GeoDataFrame:
     """
     Read a file into a GeoDataFrame, reproject it to the desired CRS and return it.
 
     Parameters
     ----------
-    filename: str or pathlib.Path()
+    filename: str or pathlib.PosixPath
             path or url of the input file
     crs: int or str
             the desired output CRS (default: 4326)
@@ -48,22 +48,24 @@ def read_shp(filename: str | pathlib.Path(),
             reprojected data
     """
     gdf = geopandas.read_file(filename)
+    if(crs == None):
+        return gdf
     try:
-        return gdf.to_crs(f"ESPG:{crs}")
+        return gdf.to_crs(f"EPSG:{crs}")
     except:
         return gdf.to_crs(crs)
 
 
 # --------------------------------------------------------------------
-def read_raster(filename: str | pathlib.Path(),
-                crs: int | str = 4326
+def read_raster(filename: str | pathlib.PosixPath,
+                crs: int | str = None
                 ) -> xarray.core.dataarray.DataArray:
     """
     Read a raster file, reproject it to the desired CRS and return it.
 
     Parameters
     ----------
-    filename: str or pathlib.Path()
+    filename: str or pathlib.PosixPath
             path or url of the input file
     crs: int or str
             the desired output CRS (default: 4326)
@@ -74,15 +76,17 @@ def read_raster(filename: str | pathlib.Path(),
             reprojected raster data
     """
     data = rioxarray.open_rasterio(filename)
+    if(crs == None):
+        return data
     try:
-        return data.rio.reproject(f"ESPG:{crs}")
+        return data.rio.reproject(f"EPSG:{crs}")
     except:
         return data.rio.reproject(crs)
 
 
 # --------------------------------------------------------------------
 def extract_area(data: geopandas.GeoDataFrame | xarray.core.dataarray.DataArray,
-                 area : shapely.geometry.collection.GeometryCollection | None
+                 area : geopandas.GeoDataFrame
                  ) -> geopandas.GeoDataFrame | xarray.core.dataarray.DataArray:
     """
     Given a collection of geometry(ies), extract the associated data or clip the raster.
@@ -100,12 +104,12 @@ def extract_area(data: geopandas.GeoDataFrame | xarray.core.dataarray.DataArray,
             sub dataset or clipped raster
     """
     try:
-        gdf_area = geometry2gdf(area, data.crs.to_epsg())
-        sub_data = data.join(gdf_area,rsuffix='_area')
+        proj_area = area.to_crs(data.crs)
+        sub_data = data.sjoin(proj_area,how='inner',predicate='within',rsuffix='area')
         return sub_data
     except:
-        gdf_area = geometry2gdf(area, data.rio.crs.to_epsg())
-        sub_data = data.rio.clip(gdf_area.geometry,gdf_area.crs)
+        proj_area = area.to_crs(data.rio.crs)
+        sub_data = data.rio.clip(proj_area.geometry,proj_area.crs)
         return sub_data
 
 
