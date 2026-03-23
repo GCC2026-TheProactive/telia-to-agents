@@ -31,7 +31,7 @@ def add_geometry(df: pd.DataFrame,
     gdf = read_shp(filename,crs=3067)
     merged = df.merge(gdf,how="inner",on="location_id")
 
-    return merged
+    return geopandas.GeoDataFrame(merged,geometry=merged['geometry'])
 
 
 # --------------------------------------------------------------------
@@ -68,8 +68,15 @@ def read_parquet(path: str | pathlib.PosixPath,
 
 # Paths definition
 NOTEBOOK_PATH  = pathlib.Path().resolve()
-DATA_DIRECTORY = NOTEBOOK_PATH / "data" / "uusimaa_telia_hourly_visits"
+DATA_DIRECTORY = NOTEBOOK_PATH / "data"
+TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "uusimaa_telia_hourly_visits"
+
+CAPITAL_AREA = ['Helsinki','Espoo','Vantaa','Kauniainen']
+municipalities = read_shp(DATA_DIRECTORY / "finland_municipalities_2021.gpkg")
+capital_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
 
 
 gdf = read_parquet(DATA_DIRECTORY, crs=3067)
 
+
+sub_telia = geopandas.sjoin(telia_gdf,capital_area,how="inner",predicate="intersects")
