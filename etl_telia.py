@@ -180,7 +180,8 @@ def extract_month(gdf: geopandas.GeoDataFrame,
 
 # --------------------------------------------------------------------
 def extract_time_period(gdf: geopandas.GeoDataFrame,
-            time_period: tuple[int] = (0,24)
+            time_period: tuple[int] = (0,24),
+            weekdays: bool = True,
             ) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset, add the geometry of the grid and return
@@ -201,11 +202,16 @@ def extract_time_period(gdf: geopandas.GeoDataFrame,
     hour = gdf['observation_start_date'].dt.hour
 
     if time_period[0] < time_period[1]:
-        return gdf[(time_period[0] <= hour) & (hour < time_period[1])]
+        sub_gdf = gdf[(time_period[0] <= hour) & (hour < time_period[1])]
     elif time_period[0] > time_period[1]:
-        return gdf[(time_period[1] <= hour) | (hour < time_period[0])]
-    elif time_period[0] > time_period[1]:
-        return gdf[(hour == time_period[0])]
+        sub_gdf = gdf[(time_period[1] <= hour) | (hour < time_period[0])]
+    elif time_period[0] == time_period[1]:
+        sub_gdf = gdf[(hour == time_period[0])]
+
+    if(weekdays):
+        return sub_gdf[sub_gdf['observation_start_date'].dt.weekday<=4]
+    else:
+        return sub_gdf[sub_gdf['observation_start_date'].dt.weekday > 4]
 
 # --------------------------------------------------------------------
 def average_population_density(gdf: geopandas.GeoDataFrame,
@@ -213,6 +219,7 @@ def average_population_density(gdf: geopandas.GeoDataFrame,
             time_period: tuple[int] = (0,24),
             month: int | None = None,
             season: str | None = 'spring',
+            weekdays: bool = True
             ) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset, add the geometry of the grid and return
@@ -233,11 +240,11 @@ def average_population_density(gdf: geopandas.GeoDataFrame,
     if(month is not None):
         print('month')
         month_gdf = extract_month(gdf,month)
-        sub_df = extract_time_period(month_gdf,time_period)
+        sub_df = extract_time_period(month_gdf,time_period,weekdays)
     else:
         print('season')
         season_gdf = extract_season(gdf,season)
-        sub_df = extract_time_period(season_gdf,time_period)
+        sub_df = extract_time_period(season_gdf,time_period,weekdays)
 
     visits = sub_df[['visit_count','resident_visit_count','worker_visit_count',
                      'non_resident_non_worker_visit_count','geometry']]
