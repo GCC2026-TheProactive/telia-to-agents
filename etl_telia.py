@@ -3,6 +3,8 @@ import pandas as pd
 import geopandas
 import duckdb
 from geoanalysis_functions import read_shp
+import matplotlib.pyplot as plt
+
 
 # Paths definition
 NOTEBOOK_PATH  = pathlib.Path().resolve()
@@ -223,14 +225,7 @@ def average_population_density(gdf: geopandas.GeoDataFrame,
 
 
 
-# CAPITAL_AREA = ['Helsinki','Espoo','Vantaa','Kauniainen']
-# municipalities = read_shp(DATA_DIRECTORY / "finland_municipalities_2021.gpkg")
-# capital_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
-#
-# telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=3067)
 
-
-# sub_telia = geopandas.sjoin(telia_gdf,capital_area,how="inner",predicate="intersects")
 
 
 # sub_telia = read_capital_area(crs=3067)
@@ -238,5 +233,4 @@ sub_telia = read_Lappeenranta(crs=3067)
 
 avg_visits = average_population_density(sub_telia,(4,6),"summer")
 
-avg_visits.plot(column = 'total_visits')
-plt.show()
+
