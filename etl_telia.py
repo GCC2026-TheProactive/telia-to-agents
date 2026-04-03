@@ -212,7 +212,12 @@ def average_population_density(gdf: geopandas.GeoDataFrame,
                      'non_resident_non_worker_visit_count']].sum(axis=1)
     avg_visits = visits.groupby('geometry').mean().reset_index()
 
-    return geopandas.GeoDataFrame(avg_visits,geometry=avg_visits['geometry'])
+    gdf = geopandas.GeoDataFrame(avg_visits,geometry=avg_visits['geometry'])
+
+    gdf['area_km2'] = gdf.area / 1e6
+    gdf['density'] = gdf['total_visits'] / gdf['area_km2']
+
+    return gdf
 
 # --------------------------------------------------------------------
 
