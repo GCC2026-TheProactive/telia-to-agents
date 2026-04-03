@@ -28,14 +28,14 @@ def add_geometry(df: pd.DataFrame,
             Telia's data with the associated geometry
     """
     filename = pathlib.Path(path) / "finland_telia_grid_EPSG3067.gpkg"
-    gdf = read_shp(filename,crs=3067)
+    gdf = read_shp(filename,crs=crs)
     merged = df.merge(gdf,how="inner",on="location_id")
 
     return geopandas.GeoDataFrame(merged,geometry=merged['geometry'])
 
 
 # --------------------------------------------------------------------
-def read_parquet(path: str | pathlib.PosixPath,
+def read_parquet(filename: str | pathlib.PosixPath,
              crs: int | str = 3067
              ) -> geopandas.GeoDataFrame:
     """
@@ -45,16 +45,16 @@ def read_parquet(path: str | pathlib.PosixPath,
     Parameters
     ----------
     filename: str or pathlib.PosixPath
-            path of the data directory
+            path of the input file
     crs: int or str
-            the desired output CRS (default: 4326)
+            the desired output CRS (default: 3067)
 
     Returns
     -------
     geopandas.GeoDataFrame
             Telia's data with the associated geometry
     """
-    filename = pathlib.Path(path) / "hourly_visits_uusimaa_2025.parquet"
+    filename = pathlib.Path(filename)
     df = duckdb.sql(f"""SELECT
                            *
                         FROM
@@ -168,7 +168,7 @@ municipalities = read_shp(DATA_DIRECTORY / "finland_municipalities_2021.gpkg")
 capital_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
 
 
-gdf = read_parquet(DATA_DIRECTORY, crs=3067)
+telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=3067)
 
 
 sub_telia = geopandas.sjoin(telia_gdf,capital_area,how="inner",predicate="intersects")
