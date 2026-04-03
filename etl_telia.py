@@ -4,6 +4,13 @@ import geopandas
 import duckdb
 from geoanalysis_functions import read_shp
 
+# Paths definition
+NOTEBOOK_PATH  = pathlib.Path().resolve()
+DATA_DIRECTORY = NOTEBOOK_PATH / "data"
+TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_hourly_visits"
+
+CAPITAL_AREA = ['Helsinki', 'Espoo', 'Vantaa', 'Kauniainen']
+LAPPEENRANTA = ['Lappeenranta', 'Imatra', 'Lemi', 'Luumäki', 'Miehikkälä','Savitaipale','Taipalsaari']
 
 # --------------------------------------------------------------------
 def add_geometry(df: pd.DataFrame,
@@ -61,7 +68,59 @@ def read_parquet(filename: str | pathlib.PosixPath,
                            '{filename}'
                      """).df()
 
-    return add_geometry(df,path,crs)
+    return add_geometry(df,TELIA_DATA_DIRECTORY,crs)
+
+# --------------------------------------------------------------------
+def read_capital_area(crs: int | str = 3067
+             ) -> geopandas.GeoDataFrame:
+    """
+    Read the Telia's dataset and extract the data corresponding to
+    the capital area.
+
+    Parameters
+    ----------
+    crs: int or str
+            the desired output CRS (default: 3067)
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            Telia's data for the capital area with the associated geometry
+    """
+    municipalities = read_shp(DATA_DIRECTORY / "finland_municipalities_2021.gpkg")
+    sub_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
+
+    telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=crs)
+
+    sub_telia = geopandas.sjoin(telia_gdf, sub_area, how="inner", predicate="intersects")
+
+    return sub_telia
+
+# --------------------------------------------------------------------
+def read_Lappeenranta(crs: int | str = 3067
+             ) -> geopandas.GeoDataFrame:
+    """
+    Read the Telia's dataset and extract the data corresponding to
+    the capital area.
+
+    Parameters
+    ----------
+    crs: int or str
+            the desired output CRS (default: 3067)
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            Telia's data for the capital area with the associated geometry
+    """
+    municipalities = read_shp(DATA_DIRECTORY / "finland_municipalities_2021.gpkg")
+    sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
+
+    telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet", crs=crs)
+
+    sub_telia = geopandas.sjoin(telia_gdf, sub_area, how="inner", predicate="intersects")
+
+    return sub_telia
 
 # --------------------------------------------------------------------
 def extract_season(gdf: geopandas.GeoDataFrame,
@@ -158,20 +217,20 @@ def average_population_density(gdf: geopandas.GeoDataFrame,
 # --------------------------------------------------------------------
 
 
-# Paths definition
-NOTEBOOK_PATH  = pathlib.Path().resolve()
-DATA_DIRECTORY = NOTEBOOK_PATH / "data"
-TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "uusimaa_telia_hourly_visits"
 
-CAPITAL_AREA = ['Helsinki','Espoo','Vantaa','Kauniainen']
-municipalities = read_shp(DATA_DIRECTORY / "finland_municipalities_2021.gpkg")
-capital_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
+# CAPITAL_AREA = ['Helsinki','Espoo','Vantaa','Kauniainen']
+# municipalities = read_shp(DATA_DIRECTORY / "finland_municipalities_2021.gpkg")
+# capital_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
+#
+# telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=3067)
 
 
-telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=3067)
+# sub_telia = geopandas.sjoin(telia_gdf,capital_area,how="inner",predicate="intersects")
 
 
-sub_telia = geopandas.sjoin(telia_gdf,capital_area,how="inner",predicate="intersects")
+# sub_telia = read_capital_area(crs=3067)
+sub_telia = read_Lappeenranta(crs=3067)
+
 avg_visits = average_population_density(sub_telia,(4,6),"summer")
 
 avg_visits.plot(column = 'total_visits')
