@@ -156,6 +156,29 @@ def extract_season(gdf: geopandas.GeoDataFrame,
         return gdf[month.isin([12,1,2])]
 
 # --------------------------------------------------------------------
+def extract_month(gdf: geopandas.GeoDataFrame,
+            month: int
+            ) -> geopandas.GeoDataFrame:
+    """
+    Read the Telia's dataset, add the geometry of the grid and return
+    the data into a GeoDataFrame.
+
+    Parameters
+    ----------
+    filename: str or pathlib.PosixPath
+            path of the data directory
+    crs: int or str
+            the desired output CRS (default: 4326)
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            Telia's data with the associated geometry
+    """
+
+    return gdf[gdf['observation_start_date'].dt.month == month]
+
+# --------------------------------------------------------------------
 def extract_time_period(gdf: geopandas.GeoDataFrame,
             time_period: tuple[int] = (0,24)
             ) -> geopandas.GeoDataFrame:
@@ -186,8 +209,10 @@ def extract_time_period(gdf: geopandas.GeoDataFrame,
 
 # --------------------------------------------------------------------
 def average_population_density(gdf: geopandas.GeoDataFrame,
+            *,
             time_period: tuple[int] = (0,24),
-            season: str = 'spring'
+            month: int | None = None,
+            season: str | None = 'spring',
             ) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset, add the geometry of the grid and return
@@ -205,8 +230,14 @@ def average_population_density(gdf: geopandas.GeoDataFrame,
     geopandas.GeoDataFrame
             Telia's data with the associated geometry
     """
-    season_gdf = extract_season(gdf,season)
-    sub_df = extract_time_period(season_gdf,time_period)
+    if(month is not None):
+        print('month')
+        month_gdf = extract_month(gdf,month)
+        sub_df = extract_time_period(month_gdf,time_period)
+    else:
+        print('season')
+        season_gdf = extract_season(gdf,season)
+        sub_df = extract_time_period(season_gdf,time_period)
 
     visits = sub_df[['visit_count','resident_visit_count','worker_visit_count',
                      'non_resident_non_worker_visit_count','geometry']]
@@ -231,6 +262,6 @@ def average_population_density(gdf: geopandas.GeoDataFrame,
 # sub_telia = read_capital_area(crs=3067)
 sub_telia = read_Lappeenranta(crs=3067)
 
-avg_visits = average_population_density(sub_telia,(4,6),"summer")
+avg_visits = average_population_density(sub_telia,time_period=(4,6),month=6,season="summer")
 
 
