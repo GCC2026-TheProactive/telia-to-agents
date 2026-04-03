@@ -94,7 +94,7 @@ def read_capital_area(crs: int | str = 3067
 
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=crs)
 
-    sub_telia = geopandas.sjoin(telia_gdf, sub_area, how="inner", predicate="intersects")
+    sub_telia = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
 
     return sub_telia
 
@@ -120,7 +120,7 @@ def read_Lappeenranta(crs: int | str = 3067
 
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet", crs=crs)
 
-    sub_telia = geopandas.sjoin(telia_gdf, sub_area, how="inner", predicate="intersects")
+    sub_telia = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
 
     return sub_telia
 
