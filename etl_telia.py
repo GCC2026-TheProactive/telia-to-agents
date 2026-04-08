@@ -24,10 +24,11 @@ ENTRIES_VISITS = ['visit_count','resident_visit_count','worker_visit_count',
                   'non_resident_non_worker_visit_count']
 
 # --------------------------------------------------------------------
-def add_geometry(df: pd.DataFrame,
-             path: str | pathlib.PosixPath,
-             crs: int | str = 3067
-             ) -> geopandas.GeoDataFrame:
+def add_geometry(
+        df: pd.DataFrame,
+        path: str | pathlib.PosixPath,
+        crs: int | str = 3067
+) -> geopandas.GeoDataFrame:
     """
     Add the geometry to the Telia's data based on the associated grid.
 
@@ -53,9 +54,10 @@ def add_geometry(df: pd.DataFrame,
 
 
 # --------------------------------------------------------------------
-def read_parquet(filename: str | pathlib.PosixPath,
-             crs: int | str = 3067
-             ) -> geopandas.GeoDataFrame:
+def read_parquet(
+        filename: str | pathlib.PosixPath,
+        crs: int | str = 3067
+) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset, add the geometry of the grid and return
     the data into a GeoDataFrame.
@@ -82,8 +84,9 @@ def read_parquet(filename: str | pathlib.PosixPath,
     return add_geometry(df,TELIA_DATA_DIRECTORY,crs)
 
 # --------------------------------------------------------------------
-def read_capital_area(crs: int | str = 3067
-             ) -> geopandas.GeoDataFrame:
+def read_capital_area(
+        crs: int | str = 3067
+) -> tuple[geopandas.GeoDataFrame,xarray.DataArray]:
     """
     Read the Telia's dataset and extract the data corresponding to
     the capital area.
@@ -111,11 +114,12 @@ def read_capital_area(crs: int | str = 3067
     return sub_telia,clipped_pop_census_2021
 
 # --------------------------------------------------------------------
-def read_Lappeenranta(crs: int | str = 3067
-             ) -> geopandas.GeoDataFrame:
+def read_Lappeenranta(
+        crs: int | str = 3067
+) -> tuple[geopandas.GeoDataFrame,xarray.DataArray]:
     """
     Read the Telia's dataset and extract the data corresponding to
-    the capital area.
+    the area surrounding Lappeenranta.
 
     Parameters
     ----------
@@ -125,7 +129,7 @@ def read_Lappeenranta(crs: int | str = 3067
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data for the capital area with the associated geometry
+            Telia's data for the surroundings of Lappeenranta with the associated geometry
     """
     municipalities = read_shp(MUNICIPALITIES_DATA)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
@@ -140,9 +144,10 @@ def read_Lappeenranta(crs: int | str = 3067
     return sub_telia,clipped_pop_census_2021
 
 # --------------------------------------------------------------------
-def extract_season(gdf: geopandas.GeoDataFrame,
-            season: str = 'spring'
-            ) -> geopandas.GeoDataFrame:
+def extract_season(
+        gdf: geopandas.GeoDataFrame,
+        season: str = 'spring'
+) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset, add the geometry of the grid and return
     the data into a GeoDataFrame.
@@ -171,9 +176,10 @@ def extract_season(gdf: geopandas.GeoDataFrame,
         return gdf[month.isin([12,1,2])]
 
 # --------------------------------------------------------------------
-def extract_month(gdf: geopandas.GeoDataFrame,
-            month: int
-            ) -> geopandas.GeoDataFrame:
+def extract_month(
+        gdf: geopandas.GeoDataFrame,
+        month: int
+) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset, add the geometry of the grid and return
     the data into a GeoDataFrame.
@@ -194,10 +200,11 @@ def extract_month(gdf: geopandas.GeoDataFrame,
     return gdf[gdf['observation_start_date'].dt.month == month]
 
 # --------------------------------------------------------------------
-def extract_time_period(gdf: geopandas.GeoDataFrame,
-            time_period: tuple[int] = (0,24),
-            weekdays: bool = True,
-            ) -> geopandas.GeoDataFrame:
+def extract_time_period(
+        gdf: geopandas.GeoDataFrame,
+        time_period: tuple[int,int] = (0,24),
+        weekdays: bool = True,
+) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset, add the geometry of the grid and return
     the data into a GeoDataFrame.
@@ -229,13 +236,14 @@ def extract_time_period(gdf: geopandas.GeoDataFrame,
         return sub_gdf[sub_gdf['observation_start_date'].dt.weekday > 4]
 
 # --------------------------------------------------------------------
-def average_population_density(gdf: geopandas.GeoDataFrame,
-            *,
-            time_period: tuple[int] = (0,24),
-            month: int | None = None,
-            season: str | None = 'spring',
-            weekdays: bool = True
-            ) -> geopandas.GeoDataFrame:
+def average_population_density(
+        gdf: geopandas.GeoDataFrame,
+        *,
+        time_period: tuple[int,int] = (0,24),
+        month: int | None = None,
+        season: str | None = 'spring',
+        weekdays: bool = True
+) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset, add the geometry of the grid and return
     the data into a GeoDataFrame.
