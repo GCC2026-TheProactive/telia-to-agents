@@ -1,8 +1,10 @@
 import pathlib
+import numpy as np
 import pandas as pd
+import xarray as xr
 import geopandas
 import duckdb
-from geoanalysis_functions import read_shp
+from geoanalysis_functions import read_shp,read_raster
 import matplotlib.pyplot as plt
 
 
@@ -93,10 +95,14 @@ def read_capital_area(crs: int | str = 3067
     sub_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
 
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=crs)
-
     sub_telia = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
 
-    return sub_telia
+    pop_census_2021 = read_raster(DATA_DIRECTORY / "JRC-ESTAT_Census_Population_2021_100m" /
+                                              "JRC-ESTAT_Census_Population_2021_100m.tif", crs=crs)
+    clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry,sub_area.crs)
+    clipped_pop_census_2021 = xr.where(clipped_pop_census_2021>=0, clipped_pop_census_2021, np.nan)
+
+    return sub_telia,clipped_pop_census_2021
 
 # --------------------------------------------------------------------
 def read_Lappeenranta(crs: int | str = 3067
@@ -119,10 +125,14 @@ def read_Lappeenranta(crs: int | str = 3067
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
 
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet", crs=crs)
-
     sub_telia = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
 
-    return sub_telia
+    pop_census_2021 = read_raster(DATA_DIRECTORY / "JRC-ESTAT_Census_Population_2021_100m" /
+                                              "JRC-ESTAT_Census_Population_2021_100m.tif", crs=crs)
+    clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
+    clipped_pop_census_2021 = xr.where(clipped_pop_census_2021 >= 0, clipped_pop_census_2021, np.nan)
+
+    return sub_telia,clipped_pop_census_2021
 
 # --------------------------------------------------------------------
 def extract_season(gdf: geopandas.GeoDataFrame,
@@ -267,7 +277,7 @@ def average_population_density(gdf: geopandas.GeoDataFrame,
 
 
 # sub_telia = read_capital_area(crs=3067)
-sub_telia = read_Lappeenranta(crs=3067)
+sub_telia,pop_census_2021 = read_Lappeenranta(crs=3067)
 
 avg_visits = average_population_density(sub_telia,time_period=(4,6),month=6,season="summer")
 
