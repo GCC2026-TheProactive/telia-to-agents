@@ -111,7 +111,12 @@ def read_capital_area(
     clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
     clipped_pop_census_2021 = xr.where(clipped_pop_census_2021>=0, clipped_pop_census_2021, np.nan)
 
-    return sub_telia,clipped_pop_census_2021
+    try:
+        osm_graph = osmnx.io.load_graphml(DATA_DIRECTORY / "Capital_area_osm.graphml")
+    except:
+        osm_graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all())
+
+    return sub_telia,clipped_pop_census_2021,osm_graph
 
 # --------------------------------------------------------------------
 def read_Lappeenranta(
@@ -141,7 +146,12 @@ def read_Lappeenranta(
     clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
     clipped_pop_census_2021 = xr.where(clipped_pop_census_2021 >= 0, clipped_pop_census_2021, np.nan)
 
-    return sub_telia,clipped_pop_census_2021
+    try:
+        osm_graph = osmnx.io.load_graphml(DATA_DIRECTORY / "Lappeenranta_osm.graphml")
+    except:
+        osm_graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all())
+
+    return sub_telia,clipped_pop_census_2021,osm_graph
 
 # --------------------------------------------------------------------
 def extract_season(
@@ -291,7 +301,7 @@ def average_population_density(
 
 
 # sub_telia = read_capital_area(crs=3067)
-sub_telia,pop_census_2021 = read_Lappeenranta(crs=3067)
+sub_telia,pop_census_2021,osm_graph = read_Lappeenranta(crs=3067)
 
 avg_visits = average_population_density(sub_telia,time_period=(4,6),month=6,season="summer")
 
