@@ -13,6 +13,10 @@ NOTEBOOK_PATH  = pathlib.Path().resolve()
 DATA_DIRECTORY = NOTEBOOK_PATH / "data"
 TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_hourly_visits"
 
+MUNICIPALITIES_DATA = DATA_DIRECTORY / "finland_municipalities_2021.gpkg"
+POPULATION_CENSUS_2021_AT_100m = (DATA_DIRECTORY / "JRC-ESTAT_Census_Population_2021_100m" /
+                                  "JRC-ESTAT_Census_Population_2021_100m.tif")
+
 CAPITAL_AREA = ['Helsinki', 'Espoo', 'Vantaa', 'Kauniainen']
 LAPPEENRANTA = ['Lappeenranta', 'Imatra', 'Lemi', 'Luumäki', 'Miehikkälä','Savitaipale','Taipalsaari']
 
@@ -94,15 +98,14 @@ def read_capital_area(crs: int | str = 3067
     geopandas.GeoDataFrame
             Telia's data for the capital area with the associated geometry
     """
-    municipalities = read_shp(DATA_DIRECTORY / "finland_municipalities_2021.gpkg")
+    municipalities = read_shp(MUNICIPALITIES_DATA)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
 
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=crs)
     sub_telia = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
 
-    pop_census_2021 = read_raster(DATA_DIRECTORY / "JRC-ESTAT_Census_Population_2021_100m" /
-                                              "JRC-ESTAT_Census_Population_2021_100m.tif", crs=crs)
-    clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry,sub_area.crs)
+    pop_census_2021 = read_raster(POPULATION_CENSUS_2021_AT_100m, crs=crs)
+    clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
     clipped_pop_census_2021 = xr.where(clipped_pop_census_2021>=0, clipped_pop_census_2021, np.nan)
 
     return sub_telia,clipped_pop_census_2021
@@ -124,14 +127,13 @@ def read_Lappeenranta(crs: int | str = 3067
     geopandas.GeoDataFrame
             Telia's data for the capital area with the associated geometry
     """
-    municipalities = read_shp(DATA_DIRECTORY / "finland_municipalities_2021.gpkg")
+    municipalities = read_shp(MUNICIPALITIES_DATA)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
 
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet", crs=crs)
     sub_telia = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
 
-    pop_census_2021 = read_raster(DATA_DIRECTORY / "JRC-ESTAT_Census_Population_2021_100m" /
-                                              "JRC-ESTAT_Census_Population_2021_100m.tif", crs=crs)
+    pop_census_2021 = read_raster(POPULATION_CENSUS_2021_AT_100m, crs=crs)
     clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
     clipped_pop_census_2021 = xr.where(clipped_pop_census_2021 >= 0, clipped_pop_census_2021, np.nan)
 
