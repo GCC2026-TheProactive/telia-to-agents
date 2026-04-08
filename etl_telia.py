@@ -16,6 +16,9 @@ TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_hourly_visits"
 CAPITAL_AREA = ['Helsinki', 'Espoo', 'Vantaa', 'Kauniainen']
 LAPPEENRANTA = ['Lappeenranta', 'Imatra', 'Lemi', 'Luumäki', 'Miehikkälä','Savitaipale','Taipalsaari']
 
+ENTRIES_VISITS = ['visit_count','resident_visit_count','worker_visit_count',
+                  'non_resident_non_worker_visit_count']
+
 # --------------------------------------------------------------------
 def add_geometry(df: pd.DataFrame,
              path: str | pathlib.PosixPath,
@@ -247,6 +250,7 @@ def average_population_density(gdf: geopandas.GeoDataFrame,
     geopandas.GeoDataFrame
             Telia's data with the associated geometry
     """
+    duration = time_period[1]-time_period[0]
     if(month is not None):
         print('month')
         month_gdf = extract_month(gdf,month)
@@ -256,11 +260,11 @@ def average_population_density(gdf: geopandas.GeoDataFrame,
         season_gdf = extract_season(gdf,season)
         sub_df = extract_time_period(season_gdf,time_period,weekdays)
 
-    visits = sub_df[['visit_count','resident_visit_count','worker_visit_count',
-                     'non_resident_non_worker_visit_count','geometry']]
-    visits['total_visits'] = visits[['visit_count','resident_visit_count','worker_visit_count',
-                     'non_resident_non_worker_visit_count']].sum(axis=1)
+    visits = sub_df[ENTRIES_VISITS+['geometry']]
+    visits['total_visits'] = visits[ENTRIES_VISITS].sum(axis=1)
     avg_visits = visits.groupby('geometry').mean().reset_index()
+    for entry in ENTRIES_VISITS+['total_visits']:
+        avg_visits[entry] = avg_visits[entry]/duration
 
     gdf = geopandas.GeoDataFrame(avg_visits,geometry=avg_visits['geometry'])
 
