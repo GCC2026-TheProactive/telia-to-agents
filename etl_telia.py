@@ -38,7 +38,7 @@ def add_geometry(
     ----------
     df: pd.DataFrame
             Telia's dataset
-    filename: str or pathlib.PosixPath
+    path: str or pathlib.PosixPath or pathlib.Path
             path of the data directory
     crs: int or str
             the desired output CRS (default: 3067)
@@ -66,7 +66,7 @@ def read_parquet(
 
     Parameters
     ----------
-    filename: str or pathlib.PosixPath
+    filename: str or pathlib.PosixPath or pathlib.Path
             path of the input file
     crs: int or str
             the desired output CRS (default: 3067)
@@ -101,7 +101,8 @@ def read_capital_area(
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data for the capital area with the associated geometry
+            Telia's data for the capital area with the associated
+            geometry
     """
     municipalities = read_shp(MUNICIPALITIES_DATA)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
@@ -139,7 +140,8 @@ def read_Lappeenranta(
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data for the surroundings of Lappeenranta with the associated geometry
+            Telia's data for the surroundings of Lappeenranta with
+            the associated geometry
     """
     municipalities = read_shp(MUNICIPALITIES_DATA)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
@@ -167,20 +169,20 @@ def extract_season(
         season: str = 'spring'
 ) -> geopandas.GeoDataFrame | None:
     """
-    Read the Telia's dataset, add the geometry of the grid and return
-    the data into a GeoDataFrame.
+    Extract the Telia's data corresponding to the given season.
 
     Parameters
     ----------
-    filename: str or pathlib.PosixPath
-            path of the data directory
-    crs: int or str
-            the desired output CRS (default: 4326)
+    gdf: geopandas.GeoDataFrame
+            Telia's data for the region of interest with
+            the associated geometry
+    season: str
+            season of interest
 
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data with the associated geometry
+            Telia's data for the season of interest
     """
     month = gdf['observation_start_date'].dt.month
 
@@ -200,20 +202,20 @@ def extract_month(
         month: int
 ) -> geopandas.GeoDataFrame:
     """
-    Read the Telia's dataset, add the geometry of the grid and return
-    the data into a GeoDataFrame.
+    Extract the Telia's data corresponding to a given month.
 
     Parameters
     ----------
-    filename: str or pathlib.PosixPath
-            path of the data directory
-    crs: int or str
-            the desired output CRS (default: 4326)
+    gdf: geopandas.GeoDataFrame
+            Telia's data for the region of interest with
+            the associated geometry
+    month: int
+            month of interest
 
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data with the associated geometry
+            Telia's data for the month of interest
     """
 
     return gdf[gdf['observation_start_date'].dt.month == month]
@@ -225,20 +227,23 @@ def extract_time_period(
         weekdays: bool = True,
 ) -> geopandas.GeoDataFrame:
     """
-    Read the Telia's dataset, add the geometry of the grid and return
-    the data into a GeoDataFrame.
+    Extract the time period during the day and the week from
+    the Telia data.
 
     Parameters
     ----------
-    filename: str or pathlib.PosixPath
-            path of the data directory
-    crs: int or str
-            the desired output CRS (default: 4326)
+    gdf: geopandas.GeoDataFrame
+            Telia's data for the region of interest with
+            the associated geometry
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
 
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data with the associated geometry
+            Telia's data for the time period of interest
     """
     hour = gdf['observation_start_date'].dt.hour
 
@@ -264,20 +269,26 @@ def average_population_density(
         weekdays: bool = True
 ) -> geopandas.GeoDataFrame:
     """
-    Read the Telia's dataset, add the geometry of the grid and return
-    the data into a GeoDataFrame.
+    Extract the subset of the Telia data of interest.
 
     Parameters
     ----------
-    filename: str or pathlib.PosixPath
-            path of the data directory
-    crs: int or str
-            the desired output CRS (default: 4326)
+    gdf: geopandas.GeoDataFrame
+            Telia's data for the region of interest with
+            the associated geometry
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    month: int
+            month of interest
+    season: str
+            season of interest
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
 
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data with the associated geometry
+            subset of Telia data
     """
     print("    Extract the time period")
     duration = time_period[1]-time_period[0]
