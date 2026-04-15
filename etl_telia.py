@@ -6,12 +6,14 @@ import osmnx
 import pandas as pd
 from networkx.classes.multidigraph import MultiDiGraph
 
+from export_functions import export_population_density
 from geoanalysis_functions import read_shp
 
 # Paths definition
 NOTEBOOK_PATH = pathlib.Path().resolve()
 DATA_DIRECTORY = NOTEBOOK_PATH / "data"
 TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_hourly_visits"
+OUTPUT_DIRECTORY = DATA_DIRECTORY / "output"
 
 MUNICIPALITIES_DATA = DATA_DIRECTORY / "finland_municipalities_2021.gpkg"
 POPULATION_CENSUS_2021_AT_100m = (DATA_DIRECTORY / "JRC-ESTAT_Census_Population_2021_100m" /
@@ -326,10 +328,41 @@ def average_population_density(
 
 
 # --------------------------------------------------------------------
+def export_data(
+        gdf: geopandas.GeoDataFrame,
+        graph: MultiDiGraph,
+        outfile_pop_dens: str | pathlib.PosixPath | pathlib.Path,
+        outfile_osm: str | pathlib.PosixPath | pathlib.Path
+) -> None:
+    """
+    Export the population density and OpenStreetMap datasets.
+
+    Parameters
+    ----------
+    gdf: geopandas.GeoDataFrame
+            subset of Telia data
+    graph: MultiDiGraph
+            OpenStreetMap graph for the area covered by the return Telia data
+    outfile_pop_dens: str or pathlib.PosixPath or pathlib.Path
+            path of the output file for the population density data
+    outfile_osm: str or pathlib.PosixPath or pathlib.Path
+            path of the output file for the OpenStreetMap data
+
+    Returns
+    -------
+    """
+    print("    Export population density")
+    export_population_density(gdf, outfile_pop_dens)
+
+    print("    Export OSM data")
+    osmnx.settings.all_oneway = True
+    # projected_graph = osmnx.projection.project_graph(graph, *, to_crs="EPSG:25835")
+    osmnx.io.save_graph_xml(graph, filepath=outfile_osm)
+
+    return 0
 
 
-
-
+# --------------------------------------------------------------------
 
 print('Read data')
 # sub_telia = read_capital_area(crs=3067)
@@ -337,3 +370,6 @@ sub_telia, osm_graph = read_Lappeenranta(crs=3067)
 
 print('Population density')
 population_density = average_population_density(sub_telia, time_period=(4, 6), season="spring")
+
+export_data(population_density, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_population_density.xml",
+            outfile_osm=OUTPUT_DIRECTORY / "Lappeenranta.osm")
