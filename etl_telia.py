@@ -158,9 +158,12 @@ def read_Lappeenranta(
 
     print("    Read OSM data")
     try:
-        graph = osmnx.io.load_graphml(DATA_DIRECTORY / "Lappeenranta_osm.graphml")
+        graph = osmnx.io.load_graphml(DATA_DIRECTORY / "output" / "Lappeenranta_osm.graphml", simplify=False)
     except:
-        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all())
+        osmnx.settings.all_oneway = True
+        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all(), simplify=False)
+        osmnx.io.save_graphml(graph, filepath=DATA_DIRECTORY / "output" / "Lappeenranta_osm.graphml")
+        osmnx.io.save_graph_geopackage(graph, filepath=DATA_DIRECTORY / "output" / "Lappeenranta_osm.gpkg")
 
     return sub_gdf, graph
 
