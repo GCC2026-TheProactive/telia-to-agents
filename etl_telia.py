@@ -6,6 +6,7 @@ import geopandas
 import duckdb
 import osmnx
 from geoanalysis_functions import read_shp,read_raster
+from networkx.classes.multidigraph import MultiDiGraph
 import matplotlib.pyplot as plt
 
 
@@ -27,7 +28,7 @@ ENTRIES_VISITS = ['visit_count','resident_visit_count','worker_visit_count',
 # --------------------------------------------------------------------
 def add_geometry(
         df: pd.DataFrame,
-        path: str | pathlib.PosixPath,
+        path: str | pathlib.PosixPath | pathlib.Path,
         crs: int | str = 3067
 ) -> geopandas.GeoDataFrame:
     """
@@ -56,7 +57,7 @@ def add_geometry(
 
 # --------------------------------------------------------------------
 def read_parquet(
-        filename: str | pathlib.PosixPath,
+        filename: str | pathlib.PosixPath | pathlib.Path,
         crs: int | str = 3067
 ) -> geopandas.GeoDataFrame:
     """
@@ -87,7 +88,7 @@ def read_parquet(
 # --------------------------------------------------------------------
 def read_capital_area(
         crs: int | str = 3067
-) -> tuple[geopandas.GeoDataFrame,xr.DataArray]:
+) -> tuple[geopandas.GeoDataFrame,MultiDiGraph]:
     """
     Read the Telia's dataset and extract the data corresponding to
     the capital area.
@@ -125,7 +126,7 @@ def read_capital_area(
 # --------------------------------------------------------------------
 def read_Lappeenranta(
         crs: int | str = 3067
-) -> tuple[geopandas.GeoDataFrame,xr.DataArray]:
+) -> tuple[geopandas.GeoDataFrame,MultiDiGraph]:
     """
     Read the Telia's dataset and extract the data corresponding to
     the area surrounding Lappeenranta.
@@ -164,7 +165,7 @@ def read_Lappeenranta(
 def extract_season(
         gdf: geopandas.GeoDataFrame,
         season: str = 'spring'
-) -> geopandas.GeoDataFrame:
+) -> geopandas.GeoDataFrame | None:
     """
     Read the Telia's dataset, add the geometry of the grid and return
     the data into a GeoDataFrame.
@@ -191,6 +192,7 @@ def extract_season(
         return gdf[month.isin([9,10,11])]
     elif season == 'winter':
         return gdf[month.isin([12,1,2])]
+    return None
 
 # --------------------------------------------------------------------
 def extract_month(
