@@ -304,7 +304,7 @@ def average_population_density(
 
 
 # sub_telia = read_capital_area(crs=3067)
-sub_telia,pop_census_2021,osm_graph = read_Lappeenranta(crs=3067)
+sub_telia,osm_graph = read_Lappeenranta(crs=3067)
 
 avg_visits = average_population_density(sub_telia,time_period=(4,6),month=6,season="summer")
 
