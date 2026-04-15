@@ -103,6 +103,8 @@ def read_capital_area(
     geopandas.GeoDataFrame
             Telia's data for the capital area with the associated
             geometry
+    MultiDiGraph
+            OpenStreetMap graph for the area covered by the return Telia data
     """
     municipalities = read_shp(MUNICIPALITIES_DATA)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
@@ -143,6 +145,8 @@ def read_Lappeenranta(
     geopandas.GeoDataFrame
             Telia's data for the surroundings of Lappeenranta with
             the associated geometry
+    MultiDiGraph
+            OpenStreetMap graph for the area covered by the return Telia data
     """
     municipalities = read_shp(MUNICIPALITIES_DATA)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
@@ -172,7 +176,7 @@ def read_Lappeenranta(
 def extract_season(
         gdf: geopandas.GeoDataFrame,
         season: str = 'spring'
-) -> geopandas.GeoDataFrame | None:
+) -> geopandas.GeoDataFrame:
     """
     Extract the Telia's data corresponding to the given season.
 
@@ -199,7 +203,6 @@ def extract_season(
         return gdf[month.isin([9, 10, 11])]
     elif season == 'winter':
         return gdf[month.isin([12, 1, 2])]
-    return None
 
 
 # --------------------------------------------------------------------
