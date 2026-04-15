@@ -108,16 +108,17 @@ def read_capital_area(
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=crs)
     sub_telia = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
 
-    pop_census_2021 = read_raster(POPULATION_CENSUS_2021_AT_100m, crs=crs)
-    clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
-    clipped_pop_census_2021 = xr.where(clipped_pop_census_2021>=0, clipped_pop_census_2021, np.nan)
+    # print("    Read population census 2021")
+    # pop_census_2021 = read_raster(POPULATION_CENSUS_2021_AT_100m, crs=crs)
+    # clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
+    # clipped_pop_census_2021 = xr.where(clipped_pop_census_2021>=0, clipped_pop_census_2021, np.nan)
 
     try:
         osm_graph = osmnx.io.load_graphml(DATA_DIRECTORY / "Capital_area_osm.graphml")
     except:
         osm_graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all())
 
-    return sub_telia,clipped_pop_census_2021,osm_graph
+    return sub_telia,osm_graph
 
 # --------------------------------------------------------------------
 def read_Lappeenranta(
@@ -143,16 +144,17 @@ def read_Lappeenranta(
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet", crs=crs)
     sub_telia = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
 
-    pop_census_2021 = read_raster(POPULATION_CENSUS_2021_AT_100m, crs=crs)
-    clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
-    clipped_pop_census_2021 = xr.where(clipped_pop_census_2021 >= 0, clipped_pop_census_2021, np.nan)
+    # print("    Read population census 2021")
+    # pop_census_2021 = read_raster(POPULATION_CENSUS_2021_AT_100m, crs=crs)
+    # clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
+    # clipped_pop_census_2021 = xr.where(clipped_pop_census_2021 >= 0, clipped_pop_census_2021, np.nan)
 
     try:
         osm_graph = osmnx.io.load_graphml(DATA_DIRECTORY / "Lappeenranta_osm.graphml")
     except:
         osm_graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all())
 
-    return sub_telia,clipped_pop_census_2021,osm_graph
+    return sub_telia,osm_graph
 
 # --------------------------------------------------------------------
 def extract_season(
