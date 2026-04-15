@@ -1,17 +1,15 @@
 import pathlib
-import numpy as np
-import pandas as pd
-import xarray as xr
-import geopandas
-import duckdb
-import osmnx
-from geoanalysis_functions import read_shp,read_raster
-from networkx.classes.multidigraph import MultiDiGraph
-import matplotlib.pyplot as plt
 
+import duckdb
+import geopandas
+import osmnx
+import pandas as pd
+from networkx.classes.multidigraph import MultiDiGraph
+
+from geoanalysis_functions import read_shp
 
 # Paths definition
-NOTEBOOK_PATH  = pathlib.Path().resolve()
+NOTEBOOK_PATH = pathlib.Path().resolve()
 DATA_DIRECTORY = NOTEBOOK_PATH / "data"
 TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_hourly_visits"
 
@@ -20,10 +18,11 @@ POPULATION_CENSUS_2021_AT_100m = (DATA_DIRECTORY / "JRC-ESTAT_Census_Population_
                                   "JRC-ESTAT_Census_Population_2021_100m.tif")
 
 CAPITAL_AREA = ['Helsinki', 'Espoo', 'Vantaa', 'Kauniainen']
-LAPPEENRANTA = ['Lappeenranta', 'Imatra', 'Lemi', 'Luumäki', 'Miehikkälä','Savitaipale','Taipalsaari']
+LAPPEENRANTA = ['Lappeenranta', 'Imatra', 'Lemi', 'Luumäki', 'Miehikkälä', 'Savitaipale', 'Taipalsaari']
 
-ENTRIES_VISITS = ['visit_count','resident_visit_count','worker_visit_count',
+ENTRIES_VISITS = ['visit_count', 'resident_visit_count', 'worker_visit_count',
                   'non_resident_non_worker_visit_count']
+
 
 # --------------------------------------------------------------------
 def add_geometry(
@@ -49,10 +48,10 @@ def add_geometry(
             Telia's data with the associated geometry
     """
     filename = pathlib.Path(path) / "finland_telia_grid_EPSG3067.gpkg"
-    gdf = read_shp(filename,crs=crs)
-    merged = df.merge(gdf,how="inner",on="location_id")
+    gdf = read_shp(filename, crs=crs)
+    merged = df.merge(gdf, how="inner", on="location_id")
 
-    return geopandas.GeoDataFrame(merged,geometry=merged['geometry'])
+    return geopandas.GeoDataFrame(merged, geometry=merged['geometry'])
 
 
 # --------------------------------------------------------------------
@@ -83,12 +82,13 @@ def read_parquet(
                            '{filename}'
                      """).df()
 
-    return add_geometry(df,TELIA_DATA_DIRECTORY,crs)
+    return add_geometry(df, TELIA_DATA_DIRECTORY, crs)
+
 
 # --------------------------------------------------------------------
 def read_capital_area(
         crs: int | str = 3067
-) -> tuple[geopandas.GeoDataFrame,MultiDiGraph]:
+) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
     """
     Read the Telia's dataset and extract the data corresponding to
     the capital area.
@@ -109,7 +109,7 @@ def read_capital_area(
 
     print("    Read Telia visit data")
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=crs)
-    sub_gdf   = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
+    sub_gdf = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
 
     # print("    Read population census 2021")
     # pop_census_2021 = read_raster(POPULATION_CENSUS_2021_AT_100m, crs=crs)
@@ -122,12 +122,13 @@ def read_capital_area(
     except:
         graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all())
 
-    return sub_gdf,graph
+    return sub_gdf, graph
+
 
 # --------------------------------------------------------------------
 def read_Lappeenranta(
         crs: int | str = 3067
-) -> tuple[geopandas.GeoDataFrame,MultiDiGraph]:
+) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
     """
     Read the Telia's dataset and extract the data corresponding to
     the area surrounding Lappeenranta.
@@ -148,7 +149,7 @@ def read_Lappeenranta(
 
     print("    Read Telia visit data")
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet", crs=crs)
-    sub_gdf = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
+    sub_gdf = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
 
     # print("    Read population census 2021")
     # pop_census_2021 = read_raster(POPULATION_CENSUS_2021_AT_100m, crs=crs)
@@ -161,7 +162,8 @@ def read_Lappeenranta(
     except:
         graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all())
 
-    return sub_gdf,graph
+    return sub_gdf, graph
+
 
 # --------------------------------------------------------------------
 def extract_season(
@@ -187,14 +189,15 @@ def extract_season(
     month = gdf['observation_start_date'].dt.month
 
     if season == 'spring':
-        return gdf[month.isin([3,4,5])]
+        return gdf[month.isin([3, 4, 5])]
     elif season == 'summer':
-        return gdf[month.isin([6,7,8])]
-    elif season in ['fall','autumn']:
-        return gdf[month.isin([9,10,11])]
+        return gdf[month.isin([6, 7, 8])]
+    elif season in ['fall', 'autumn']:
+        return gdf[month.isin([9, 10, 11])]
     elif season == 'winter':
-        return gdf[month.isin([12,1,2])]
+        return gdf[month.isin([12, 1, 2])]
     return None
+
 
 # --------------------------------------------------------------------
 def extract_month(
@@ -220,10 +223,11 @@ def extract_month(
 
     return gdf[gdf['observation_start_date'].dt.month == month]
 
+
 # --------------------------------------------------------------------
 def extract_time_period(
         gdf: geopandas.GeoDataFrame,
-        time_period: tuple[int,int] = (0,24),
+        time_period: tuple[int, int] = (0, 24),
         weekdays: bool = True,
 ) -> geopandas.GeoDataFrame:
     """
@@ -254,16 +258,17 @@ def extract_time_period(
     elif time_period[0] == time_period[1]:
         sub_gdf = gdf[(hour == time_period[0])]
 
-    if(weekdays):
-        return sub_gdf[sub_gdf['observation_start_date'].dt.weekday<=4]
+    if weekdays:
+        return sub_gdf[sub_gdf['observation_start_date'].dt.weekday <= 4]
     else:
         return sub_gdf[sub_gdf['observation_start_date'].dt.weekday > 4]
+
 
 # --------------------------------------------------------------------
 def average_population_density(
         gdf: geopandas.GeoDataFrame,
         *,
-        time_period: tuple[int,int] = (0,24),
+        time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
         season: str | None = 'spring',
         weekdays: bool = True
@@ -291,27 +296,28 @@ def average_population_density(
             subset of Telia data
     """
     print("    Extract the time period")
-    duration = time_period[1]-time_period[0]
-    if(month is not None):
-        month_gdf = extract_month(gdf,month)
-        sub_df = extract_time_period(month_gdf,time_period,weekdays)
+    duration = time_period[1] - time_period[0]
+    if month is not None:
+        month_gdf = extract_month(gdf, month)
+        sub_df = extract_time_period(month_gdf, time_period, weekdays)
     else:
-        season_gdf = extract_season(gdf,season)
-        sub_df = extract_time_period(season_gdf,time_period,weekdays)
+        season_gdf = extract_season(gdf, season)
+        sub_df = extract_time_period(season_gdf, time_period, weekdays)
 
     print('    Derive the population density')
-    visits = sub_df[ENTRIES_VISITS+['geometry']]
+    visits = sub_df[ENTRIES_VISITS + ['geometry']]
     visits['total_visits'] = visits[ENTRIES_VISITS].sum(axis=1)
     avg_visits = visits.groupby('geometry').mean().reset_index()
-    for entry in ENTRIES_VISITS+['total_visits']:
-        avg_visits[entry] = avg_visits[entry]/duration
+    for entry in ENTRIES_VISITS + ['total_visits']:
+        avg_visits[entry] = avg_visits[entry] / duration
 
-    gdf = geopandas.GeoDataFrame(avg_visits,geometry=avg_visits['geometry'])
+    gdf = geopandas.GeoDataFrame(avg_visits, geometry=avg_visits['geometry'])
 
     gdf['area_km2'] = gdf.area / 1e6
     gdf['density'] = gdf['total_visits'] / gdf['area_km2']
 
     return gdf
+
 
 # --------------------------------------------------------------------
 
@@ -321,9 +327,7 @@ def average_population_density(
 
 print('Read data')
 # sub_telia = read_capital_area(crs=3067)
-sub_telia,osm_graph = read_Lappeenranta(crs=3067)
+sub_telia, osm_graph = read_Lappeenranta(crs=3067)
 
 print('Population density')
-population_density = average_population_density(sub_telia,time_period=(4,6),season="spring")
-
-
+population_density = average_population_density(sub_telia, time_period=(4, 6), season="spring")

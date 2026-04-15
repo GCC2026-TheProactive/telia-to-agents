@@ -3,6 +3,8 @@ import shapely
 import xarray
 import geopandas
 import rioxarray
+import shapely
+import xarray
 
 
 # --------------------------------------------------------------------
@@ -25,9 +27,9 @@ def geometry2gdf(geom: shapely.geometry.collection.GeometryCollection,
     associated GeoDataFrame
     """
     try:
-        return geopandas.GeoDataFrame({'geometry': geom},crs=f"ESPG:{crs}")
+        return geopandas.GeoDataFrame({'geometry': geom}, crs=f"ESPG:{crs}")
     except:
-        return geopandas.GeoDataFrame({'geometry': geom},crs=crs)
+        return geopandas.GeoDataFrame({'geometry': geom}, crs=crs)
 
 
 # --------------------------------------------------------------------
@@ -50,7 +52,7 @@ def read_shp(filename: str | pathlib.PosixPath | pathlib.Path,
             reprojected data
     """
     gdf = geopandas.read_file(filename)
-    if(crs == None):
+    if (crs == None):
         return gdf
     try:
         return gdf.to_crs(f"EPSG:{crs}")
@@ -78,7 +80,7 @@ def read_raster(filename: str | pathlib.PosixPath,
             reprojected raster data
     """
     data = rioxarray.open_rasterio(filename)
-    if(crs == None):
+    if (crs == None):
         return data
     try:
         return data.rio.reproject(f"EPSG:{crs}")
@@ -88,7 +90,7 @@ def read_raster(filename: str | pathlib.PosixPath,
 
 # --------------------------------------------------------------------
 def extract_area(data: geopandas.GeoDataFrame | xarray.core.dataarray.DataArray,
-                 area : geopandas.GeoDataFrame
+                 area: geopandas.GeoDataFrame
                  ) -> geopandas.GeoDataFrame | xarray.core.dataarray.DataArray:
     """
     Given a collection of geometry(ies), extract the associated data or clip the raster.
@@ -107,11 +109,11 @@ def extract_area(data: geopandas.GeoDataFrame | xarray.core.dataarray.DataArray,
     """
     try:
         proj_area = area.to_crs(data.crs)
-        sub_data = data.sjoin(proj_area,how='inner',predicate='within',rsuffix='area')
+        sub_data = data.sjoin(proj_area, how='inner', predicate='within', rsuffix='area')
         return sub_data
     except:
         proj_area = area.to_crs(data.rio.crs)
-        sub_data = data.rio.clip(proj_area.geometry,proj_area.crs)
+        sub_data = data.rio.clip(proj_area.geometry, proj_area.crs)
         return sub_data
 
 
