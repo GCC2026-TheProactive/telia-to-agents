@@ -105,6 +105,7 @@ def read_capital_area(
     municipalities = read_shp(MUNICIPALITIES_DATA)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
 
+    print("    Read Telia visit data")
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=crs)
     sub_telia = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
 
@@ -113,6 +114,7 @@ def read_capital_area(
     # clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
     # clipped_pop_census_2021 = xr.where(clipped_pop_census_2021>=0, clipped_pop_census_2021, np.nan)
 
+    print("    Read OSM data")
     try:
         osm_graph = osmnx.io.load_graphml(DATA_DIRECTORY / "Capital_area_osm.graphml")
     except:
@@ -141,6 +143,7 @@ def read_Lappeenranta(
     municipalities = read_shp(MUNICIPALITIES_DATA)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
 
+    print("    Read Telia visit data")
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet", crs=crs)
     sub_telia = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
 
@@ -149,6 +152,7 @@ def read_Lappeenranta(
     # clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
     # clipped_pop_census_2021 = xr.where(clipped_pop_census_2021 >= 0, clipped_pop_census_2021, np.nan)
 
+    print("    Read OSM data")
     try:
         osm_graph = osmnx.io.load_graphml(DATA_DIRECTORY / "Lappeenranta_osm.graphml")
     except:
@@ -273,16 +277,16 @@ def average_population_density(
     geopandas.GeoDataFrame
             Telia's data with the associated geometry
     """
+    print("    Extract the time period")
     duration = time_period[1]-time_period[0]
     if(month is not None):
-        print('month')
         month_gdf = extract_month(gdf,month)
         sub_df = extract_time_period(month_gdf,time_period,weekdays)
     else:
-        print('season')
         season_gdf = extract_season(gdf,season)
         sub_df = extract_time_period(season_gdf,time_period,weekdays)
 
+    print('    Derive the population density')
     visits = sub_df[ENTRIES_VISITS+['geometry']]
     visits['total_visits'] = visits[ENTRIES_VISITS].sum(axis=1)
     avg_visits = visits.groupby('geometry').mean().reset_index()
@@ -302,10 +306,11 @@ def average_population_density(
 
 
 
-
+print('Read data')
 # sub_telia = read_capital_area(crs=3067)
 sub_telia,osm_graph = read_Lappeenranta(crs=3067)
 
-avg_visits = average_population_density(sub_telia,time_period=(4,6),month=6,season="summer")
+print('Population density')
+avg_visits = average_population_density(sub_telia,time_period=(4,6),season="spring")
 
 
