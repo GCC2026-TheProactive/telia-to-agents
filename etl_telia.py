@@ -356,7 +356,7 @@ def export_data(
 
     print("    Export OSM data")
     osmnx.settings.all_oneway = True
-    # projected_graph = osmnx.projection.project_graph(graph, *, to_crs="EPSG:25835")
+    # projected_graph = osmnx.projection.project_graph(graph, to_crs="EPSG:25835")
     osmnx.io.save_graph_xml(graph, filepath=outfile_osm)
 
     return 0
@@ -371,5 +371,6 @@ sub_telia, osm_graph = read_Lappeenranta(crs=3067)
 print('Population density')
 population_density = average_population_density(sub_telia, time_period=(4, 6), season="spring")
 
-export_data(population_density, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_population_density.xml",
+print('Export data')
+export_data(population_density, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_population_density.gpkg",
             outfile_osm=OUTPUT_DIRECTORY / "Lappeenranta.osm")
