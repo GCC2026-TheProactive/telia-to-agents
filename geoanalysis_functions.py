@@ -31,7 +31,7 @@ def geometry2gdf(geom: shapely.geometry.collection.GeometryCollection,
 
 
 # --------------------------------------------------------------------
-def read_shp(filename: str | pathlib.PosixPath,
+def read_shp(filename: str | pathlib.PosixPath | pathlib.Path,
              crs: int | str = None
              ) -> geopandas.GeoDataFrame:
     """
@@ -39,7 +39,7 @@ def read_shp(filename: str | pathlib.PosixPath,
 
     Parameters
     ----------
-    filename: str or pathlib.PosixPath
+    filename: str or pathlib.PosixPath or pathlib.Path
             path or url of the input file
     crs: int or str
             the desired output CRS (default: 4326)
