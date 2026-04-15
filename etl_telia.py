@@ -4,6 +4,7 @@ import pandas as pd
 import xarray as xr
 import geopandas
 import duckdb
+import osmnx
 from geoanalysis_functions import read_shp,read_raster
 import matplotlib.pyplot as plt
 
@@ -86,7 +87,7 @@ def read_parquet(
 # --------------------------------------------------------------------
 def read_capital_area(
         crs: int | str = 3067
-) -> tuple[geopandas.GeoDataFrame,xarray.DataArray]:
+) -> tuple[geopandas.GeoDataFrame,xr.DataArray]:
     """
     Read the Telia's dataset and extract the data corresponding to
     the capital area.
@@ -121,7 +122,7 @@ def read_capital_area(
 # --------------------------------------------------------------------
 def read_Lappeenranta(
         crs: int | str = 3067
-) -> tuple[geopandas.GeoDataFrame,xarray.DataArray]:
+) -> tuple[geopandas.GeoDataFrame,xr.DataArray]:
     """
     Read the Telia's dataset and extract the data corresponding to
     the area surrounding Lappeenranta.
