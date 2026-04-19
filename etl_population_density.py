@@ -314,6 +314,21 @@ def average_population_density(
 
 
 # --------------------------------------------------------------------
+def average_number_car_bikes(
+        gdf: geopandas.GeoDataFrame,
+        *,
+        time_period: tuple[int, int] = (0, 24),
+        month: int | None = None,
+        season: str | None = 'spring',
+        weekdays: bool = True
+) -> geopandas.GeoDataFrame:
+    gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS
+    gdf['nb_bikes'] = gdf['total_visits'] * FRACTION_BIKES
+
+    return gdf
+
+
+# --------------------------------------------------------------------
 def population_density_Lappeenranta():
     print('  Read data')
     sub_telia, osm_graph = read_Lappeenranta(time_period=(4, 6), season="spring", weekdays=WEEKDAYS, crs=CRS,
@@ -321,6 +336,7 @@ def population_density_Lappeenranta():
 
     print('  Derive population density')
     population_density = average_population_density(sub_telia, time_period=(4, 6))
+    population_density = average_number_car_bikes(population_density,weekdays=WEEKDAYS)
 
     return population_density, osm_graph
 
