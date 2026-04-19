@@ -354,7 +354,7 @@ def export_data(
     -------
     """
     print("    Export population density")
-    export_population_density(gdf, outfile_pop_dens)
+    export_population_density(gdf, outfile_pop_dens, CRS)
 
     print("    Export OSM data")
     osmnx.settings.all_oneway = True
@@ -374,5 +374,5 @@ print('Population density')
 population_density = average_population_density(sub_telia, time_period=(4, 6), season="spring")
 
 print('Export data')
-export_data(population_density, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_population_density.gpkg",
+export_data(population_density, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_population_density.csv",
             outfile_osm=OUTPUT_DIRECTORY / "Lappeenranta.osm")
