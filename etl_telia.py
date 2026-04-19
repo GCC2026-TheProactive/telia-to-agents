@@ -358,8 +358,8 @@ def export_data(
 
     print("    Export OSM data")
     osmnx.settings.all_oneway = True
-    # projected_graph = osmnx.projection.project_graph(graph, to_crs="EPSG:25835")
-    osmnx.io.save_graph_xml(graph, filepath=outfile_osm)
+    projected_graph = osmnx.projection.project_graph(graph, to_crs=f"EPSG:{CRS}")
+    osmnx.io.save_graph_xml(projected_graph, filepath=outfile_osm)
 
     return 0
 
