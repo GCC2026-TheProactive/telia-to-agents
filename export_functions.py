@@ -24,10 +24,15 @@ def truncated_Poisson(list_x, mu, xmin=0, xmax=5):
 
     return probas
 
+
 def export_cell(
         row: pd.Series,
         weekdays: bool = True
 ) -> tuple[list[float], list[float], list[str], list[int]]:
+    if weekdays:
+        mu_cars = MU_CAR_OCCUPANCY[0]
+    else:
+        mu_cars = MU_CAR_OCCUPANCY[1]
     X, Y, mode, n_people = [], [], [], []
     nb_persons = int(row['total_visits'])
     nb_cars = int(row['nb_cars'])
@@ -74,13 +79,14 @@ def export_cell(
 def export_population_density(
         gdf: geopandas.GeoDataFrame,
         outfile: str | pathlib.PosixPath | pathlib.Path,
-        crs: int | str = 3067
+        crs: int | str = 3067,
+        weekdays: bool = True
 ) -> None:
     assert gdf.crs.srs == f'EPSG:{crs}', f'Expected crs EPSG:{crs}'
 
     X, Y, mode, n_people = [], [], [], []
     for idx, row in gdf.iterrows():
-        output_lists = export_cell(row)
+        output_lists = export_cell(row, weekdays)
         X += output_lists[0]
         Y += output_lists[1]
         mode += output_lists[2]
