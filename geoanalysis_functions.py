@@ -1,6 +1,5 @@
 import pathlib
-import shapely
-import xarray
+
 import geopandas
 import rioxarray
 import shapely
@@ -115,7 +114,6 @@ def extract_area(data: geopandas.GeoDataFrame | xarray.core.dataarray.DataArray,
         proj_area = area.to_crs(data.rio.crs)
         sub_data = data.rio.clip(proj_area.geometry, proj_area.crs)
         return sub_data
-
 
 # --------------------------------------------------------------------
 

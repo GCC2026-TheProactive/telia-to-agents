@@ -152,7 +152,7 @@ def read_Lappeenranta(
     MultiDiGraph
             OpenStreetMap graph for the area covered by the return Telia data
     """
-    municipalities = read_shp(MUNICIPALITIES_DATA,crs=crs)
+    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
 
     print("    Read Telia visit data")
