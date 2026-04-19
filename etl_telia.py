@@ -15,6 +15,8 @@ DATA_DIRECTORY = NOTEBOOK_PATH / "data"
 TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_hourly_visits"
 OUTPUT_DIRECTORY = DATA_DIRECTORY / "output"
 
+CRS = 25835
+
 MUNICIPALITIES_DATA = DATA_DIRECTORY / "finland_municipalities_2021.gpkg"
 POPULATION_CENSUS_2021_AT_100m = (DATA_DIRECTORY / "JRC-ESTAT_Census_Population_2021_100m" /
                                   "JRC-ESTAT_Census_Population_2021_100m.tif")
@@ -108,7 +110,7 @@ def read_capital_area(
     MultiDiGraph
             OpenStreetMap graph for the area covered by the return Telia data
     """
-    municipalities = read_shp(MUNICIPALITIES_DATA)
+    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
 
     print("    Read Telia visit data")
@@ -150,7 +152,7 @@ def read_Lappeenranta(
     MultiDiGraph
             OpenStreetMap graph for the area covered by the return Telia data
     """
-    municipalities = read_shp(MUNICIPALITIES_DATA)
+    municipalities = read_shp(MUNICIPALITIES_DATA,crs=crs)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
 
     print("    Read Telia visit data")
@@ -366,7 +368,7 @@ def export_data(
 
 print('Read data')
 # sub_telia = read_capital_area(crs=3067)
-sub_telia, osm_graph = read_Lappeenranta(crs=3067)
+sub_telia, osm_graph = read_Lappeenranta(crs=CRS)
 
 print('Population density')
 population_density = average_population_density(sub_telia, time_period=(4, 6), season="spring")
