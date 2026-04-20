@@ -1,8 +1,12 @@
 import pathlib
+import numpy as np
 import pandas as pd
+import xarray as xr
 import geopandas
 import duckdb
-from geoanalysis_functions import read_shp
+import osmnx
+from geoanalysis_functions import read_shp,read_raster
+from networkx.classes.multidigraph import MultiDiGraph
 import matplotlib.pyplot as plt
 
 
@@ -11,14 +15,22 @@ NOTEBOOK_PATH  = pathlib.Path().resolve()
 DATA_DIRECTORY = NOTEBOOK_PATH / "data"
 TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_hourly_visits"
 
+MUNICIPALITIES_DATA = DATA_DIRECTORY / "finland_municipalities_2021.gpkg"
+POPULATION_CENSUS_2021_AT_100m = (DATA_DIRECTORY / "JRC-ESTAT_Census_Population_2021_100m" /
+                                  "JRC-ESTAT_Census_Population_2021_100m.tif")
+
 CAPITAL_AREA = ['Helsinki', 'Espoo', 'Vantaa', 'Kauniainen']
 LAPPEENRANTA = ['Lappeenranta', 'Imatra', 'Lemi', 'Luumäki', 'Miehikkälä','Savitaipale','Taipalsaari']
 
+ENTRIES_VISITS = ['visit_count','resident_visit_count','worker_visit_count',
+                  'non_resident_non_worker_visit_count']
+
 # --------------------------------------------------------------------
-def add_geometry(df: pd.DataFrame,
-             path: str | pathlib.PosixPath,
-             crs: int | str = 3067
-             ) -> geopandas.GeoDataFrame:
+def add_geometry(
+        df: pd.DataFrame,
+        path: str | pathlib.PosixPath | pathlib.Path,
+        crs: int | str = 3067
+) -> geopandas.GeoDataFrame:
     """
     Add the geometry to the Telia's data based on the associated grid.
 
@@ -26,7 +38,7 @@ def add_geometry(df: pd.DataFrame,
     ----------
     df: pd.DataFrame
             Telia's dataset
-    filename: str or pathlib.PosixPath
+    path: str or pathlib.PosixPath or pathlib.Path
             path of the data directory
     crs: int or str
             the desired output CRS (default: 3067)
@@ -44,16 +56,17 @@ def add_geometry(df: pd.DataFrame,
 
 
 # --------------------------------------------------------------------
-def read_parquet(filename: str | pathlib.PosixPath,
-             crs: int | str = 3067
-             ) -> geopandas.GeoDataFrame:
+def read_parquet(
+        filename: str | pathlib.PosixPath | pathlib.Path,
+        crs: int | str = 3067
+) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset, add the geometry of the grid and return
     the data into a GeoDataFrame.
 
     Parameters
     ----------
-    filename: str or pathlib.PosixPath
+    filename: str or pathlib.PosixPath or pathlib.Path
             path of the input file
     crs: int or str
             the desired output CRS (default: 3067)
@@ -73,8 +86,9 @@ def read_parquet(filename: str | pathlib.PosixPath,
     return add_geometry(df,TELIA_DATA_DIRECTORY,crs)
 
 # --------------------------------------------------------------------
-def read_capital_area(crs: int | str = 3067
-             ) -> geopandas.GeoDataFrame:
+def read_capital_area(
+        crs: int | str = 3067
+) -> tuple[geopandas.GeoDataFrame,MultiDiGraph]:
     """
     Read the Telia's dataset and extract the data corresponding to
     the capital area.
@@ -87,23 +101,36 @@ def read_capital_area(crs: int | str = 3067
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data for the capital area with the associated geometry
+            Telia's data for the capital area with the associated
+            geometry
     """
-    municipalities = read_shp(DATA_DIRECTORY / "finland_municipalities_2021.gpkg")
+    municipalities = read_shp(MUNICIPALITIES_DATA)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
 
+    print("    Read Telia visit data")
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=crs)
+    sub_gdf   = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
 
-    sub_telia = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
+    # print("    Read population census 2021")
+    # pop_census_2021 = read_raster(POPULATION_CENSUS_2021_AT_100m, crs=crs)
+    # clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
+    # clipped_pop_census_2021 = xr.where(clipped_pop_census_2021>=0, clipped_pop_census_2021, np.nan)
 
-    return sub_telia
+    print("    Read OSM data")
+    try:
+        graph = osmnx.io.load_graphml(DATA_DIRECTORY / "Capital_area_osm.graphml")
+    except:
+        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all())
+
+    return sub_gdf,graph
 
 # --------------------------------------------------------------------
-def read_Lappeenranta(crs: int | str = 3067
-             ) -> geopandas.GeoDataFrame:
+def read_Lappeenranta(
+        crs: int | str = 3067
+) -> tuple[geopandas.GeoDataFrame,MultiDiGraph]:
     """
     Read the Telia's dataset and extract the data corresponding to
-    the capital area.
+    the area surrounding Lappeenranta.
 
     Parameters
     ----------
@@ -113,36 +140,49 @@ def read_Lappeenranta(crs: int | str = 3067
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data for the capital area with the associated geometry
+            Telia's data for the surroundings of Lappeenranta with
+            the associated geometry
     """
-    municipalities = read_shp(DATA_DIRECTORY / "finland_municipalities_2021.gpkg")
+    municipalities = read_shp(MUNICIPALITIES_DATA)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
 
+    print("    Read Telia visit data")
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet", crs=crs)
+    sub_gdf = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
 
-    sub_telia = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN','geometry']], how="inner", predicate="intersects")
+    # print("    Read population census 2021")
+    # pop_census_2021 = read_raster(POPULATION_CENSUS_2021_AT_100m, crs=crs)
+    # clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
+    # clipped_pop_census_2021 = xr.where(clipped_pop_census_2021 >= 0, clipped_pop_census_2021, np.nan)
 
-    return sub_telia
+    print("    Read OSM data")
+    try:
+        graph = osmnx.io.load_graphml(DATA_DIRECTORY / "Lappeenranta_osm.graphml")
+    except:
+        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all())
+
+    return sub_gdf,graph
 
 # --------------------------------------------------------------------
-def extract_season(gdf: geopandas.GeoDataFrame,
-            season: str = 'spring'
-            ) -> geopandas.GeoDataFrame:
+def extract_season(
+        gdf: geopandas.GeoDataFrame,
+        season: str = 'spring'
+) -> geopandas.GeoDataFrame | None:
     """
-    Read the Telia's dataset, add the geometry of the grid and return
-    the data into a GeoDataFrame.
+    Extract the Telia's data corresponding to the given season.
 
     Parameters
     ----------
-    filename: str or pathlib.PosixPath
-            path of the data directory
-    crs: int or str
-            the desired output CRS (default: 4326)
+    gdf: geopandas.GeoDataFrame
+            Telia's data for the region of interest with
+            the associated geometry
+    season: str
+            season of interest
 
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data with the associated geometry
+            Telia's data for the season of interest
     """
     month = gdf['observation_start_date'].dt.month
 
@@ -154,50 +194,56 @@ def extract_season(gdf: geopandas.GeoDataFrame,
         return gdf[month.isin([9,10,11])]
     elif season == 'winter':
         return gdf[month.isin([12,1,2])]
+    return None
 
 # --------------------------------------------------------------------
-def extract_month(gdf: geopandas.GeoDataFrame,
-            month: int
-            ) -> geopandas.GeoDataFrame:
+def extract_month(
+        gdf: geopandas.GeoDataFrame,
+        month: int
+) -> geopandas.GeoDataFrame:
     """
-    Read the Telia's dataset, add the geometry of the grid and return
-    the data into a GeoDataFrame.
+    Extract the Telia's data corresponding to a given month.
 
     Parameters
     ----------
-    filename: str or pathlib.PosixPath
-            path of the data directory
-    crs: int or str
-            the desired output CRS (default: 4326)
+    gdf: geopandas.GeoDataFrame
+            Telia's data for the region of interest with
+            the associated geometry
+    month: int
+            month of interest
 
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data with the associated geometry
+            Telia's data for the month of interest
     """
 
     return gdf[gdf['observation_start_date'].dt.month == month]
 
 # --------------------------------------------------------------------
-def extract_time_period(gdf: geopandas.GeoDataFrame,
-            time_period: tuple[int] = (0,24),
-            weekdays: bool = True,
-            ) -> geopandas.GeoDataFrame:
+def extract_time_period(
+        gdf: geopandas.GeoDataFrame,
+        time_period: tuple[int,int] = (0,24),
+        weekdays: bool = True,
+) -> geopandas.GeoDataFrame:
     """
-    Read the Telia's dataset, add the geometry of the grid and return
-    the data into a GeoDataFrame.
+    Extract the time period during the day and the week from
+    the Telia data.
 
     Parameters
     ----------
-    filename: str or pathlib.PosixPath
-            path of the data directory
-    crs: int or str
-            the desired output CRS (default: 4326)
+    gdf: geopandas.GeoDataFrame
+            Telia's data for the region of interest with
+            the associated geometry
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
 
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data with the associated geometry
+            Telia's data for the time period of interest
     """
     hour = gdf['observation_start_date'].dt.hour
 
@@ -214,43 +260,51 @@ def extract_time_period(gdf: geopandas.GeoDataFrame,
         return sub_gdf[sub_gdf['observation_start_date'].dt.weekday > 4]
 
 # --------------------------------------------------------------------
-def average_population_density(gdf: geopandas.GeoDataFrame,
-            *,
-            time_period: tuple[int] = (0,24),
-            month: int | None = None,
-            season: str | None = 'spring',
-            weekdays: bool = True
-            ) -> geopandas.GeoDataFrame:
+def average_population_density(
+        gdf: geopandas.GeoDataFrame,
+        *,
+        time_period: tuple[int,int] = (0,24),
+        month: int | None = None,
+        season: str | None = 'spring',
+        weekdays: bool = True
+) -> geopandas.GeoDataFrame:
     """
-    Read the Telia's dataset, add the geometry of the grid and return
-    the data into a GeoDataFrame.
+    Extract the subset of the Telia data of interest.
 
     Parameters
     ----------
-    filename: str or pathlib.PosixPath
-            path of the data directory
-    crs: int or str
-            the desired output CRS (default: 4326)
+    gdf: geopandas.GeoDataFrame
+            Telia's data for the region of interest with
+            the associated geometry
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    month: int
+            month of interest
+    season: str
+            season of interest
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
 
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data with the associated geometry
+            subset of Telia data
     """
+    print("    Extract the time period")
+    duration = time_period[1]-time_period[0]
     if(month is not None):
-        print('month')
         month_gdf = extract_month(gdf,month)
         sub_df = extract_time_period(month_gdf,time_period,weekdays)
     else:
-        print('season')
         season_gdf = extract_season(gdf,season)
         sub_df = extract_time_period(season_gdf,time_period,weekdays)
 
-    visits = sub_df[['visit_count','resident_visit_count','worker_visit_count',
-                     'non_resident_non_worker_visit_count','geometry']]
-    visits['total_visits'] = visits[['visit_count','resident_visit_count','worker_visit_count',
-                     'non_resident_non_worker_visit_count']].sum(axis=1)
+    print('    Derive the population density')
+    visits = sub_df[ENTRIES_VISITS+['geometry']]
+    visits['total_visits'] = visits[ENTRIES_VISITS].sum(axis=1)
     avg_visits = visits.groupby('geometry').mean().reset_index()
+    for entry in ENTRIES_VISITS+['total_visits']:
+        avg_visits[entry] = avg_visits[entry]/duration
 
     gdf = geopandas.GeoDataFrame(avg_visits,geometry=avg_visits['geometry'])
 
@@ -265,10 +319,11 @@ def average_population_density(gdf: geopandas.GeoDataFrame,
 
 
 
-
+print('Read data')
 # sub_telia = read_capital_area(crs=3067)
-sub_telia = read_Lappeenranta(crs=3067)
+sub_telia,osm_graph = read_Lappeenranta(crs=3067)
 
-avg_visits = average_population_density(sub_telia,time_period=(4,6),month=6,season="summer")
+print('Population density')
+population_density = average_population_density(sub_telia,time_period=(4,6),season="spring")
 
 
