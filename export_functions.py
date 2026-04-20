@@ -51,13 +51,13 @@ def export_cell(
                                          p=truncated_Poisson(CAR_OCCUPANCY_OPTIONS, mu_cars,
                                                              xmin=0, xmax=max(CAR_OCCUPANCY_OPTIONS)))
             mode.append('car')
-            if nb_in_car<=nb_persons-nb_agents:
+            if nb_in_car <= nb_persons - nb_agents:
                 n_people.append(nb_in_car)
                 nb_agents += nb_in_car
             else:
-                n_people.append(nb_persons-nb_agents)
-                nb_agents += nb_persons-nb_agents
-        elif (idx-nb_cars  < nb_bikes) & (nb_agents < nb_persons):
+                n_people.append(nb_persons - nb_agents)
+                nb_agents += nb_persons - nb_agents
+        elif (idx - nb_cars < nb_bikes) & (nb_agents < nb_persons):
             mode.append('bike')
             n_people.append(1)
             nb_agents += 1
@@ -68,8 +68,8 @@ def export_cell(
         else:
             break
 
-    if(sum(n_people) != nb_persons):
-        print(nb_persons,nb_cars,nb_bikes,sum(n_people),nb_persons)
+    if sum(n_people) != nb_persons:
+        print(nb_persons, nb_cars, nb_bikes, sum(n_people), nb_persons)
         print(n_people)
     assert sum(n_people) == nb_persons, 'Wrong output number of people'
 
@@ -100,4 +100,4 @@ def export_population_density(
 
     out_gdf.to_csv(outfile)
 
-    return 0
+    return
