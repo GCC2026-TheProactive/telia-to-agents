@@ -8,12 +8,12 @@ from scipy.stats import poisson
 COLNAMES_CONVERSION = {'total_visits': 'nb_persons'}
 OUTPUT_COLUMNS = ['lon_centre', 'lat_centre', 'nb_persons', 'geometry']
 
-CAR_OCCUPANCY_OPTIONS = [1, 2, 3, 4]
+CAR_PASSENGERS_OPTIONS = [0, 1, 2, 3]
 AVERAGE_CAR_OCCUPANCY = [1.3, 1.7]  # https://www.traficom.fi/files/media/file/HLT2021_Fact%20sheet_Eurostat.pdf
 MU_CAR_OCCUPANCY = [0.56, 1.26]
 
 
-def truncated_Poisson(list_x, mu, xmin=0, xmax=5):
+def truncated_Poisson(list_x, mu, xmin=-1, xmax=1e3):
     Poisson_cars = poisson(mu)
     probas = np.zeros(len(list_x))
     i = 0
@@ -30,9 +30,9 @@ def export_cell(
         weekdays: bool = True
 ) -> tuple[list[float], list[float], list[str], list[int]]:
     if weekdays:
-        mu_cars = MU_CAR_OCCUPANCY[0]
+        mu_cars = AVERAGE_CAR_OCCUPANCY[0] - 1
     else:
-        mu_cars = MU_CAR_OCCUPANCY[1]
+        mu_cars = AVERAGE_CAR_OCCUPANCY[1] - 1
     X, Y, mode, n_people = [], [], [], []
     nb_persons = int(row['total_visits'])
     nb_cars = int(row['nb_cars'])
@@ -47,9 +47,9 @@ def export_cell(
             X.append(point.x)
             Y.append(point.y)
         if (idx < nb_cars) & (nb_agents < nb_persons):
-            nb_in_car = np.random.choice(CAR_OCCUPANCY_OPTIONS,
-                                         p=truncated_Poisson(CAR_OCCUPANCY_OPTIONS, mu_cars,
-                                                             xmin=0, xmax=max(CAR_OCCUPANCY_OPTIONS)))
+            nb_in_car = 1 + np.random.choice(CAR_PASSENGERS_OPTIONS,
+                                             p=truncated_Poisson(CAR_PASSENGERS_OPTIONS, mu_cars,
+                                                                 xmax=max(CAR_PASSENGERS_OPTIONS)))
             mode.append('car')
             if nb_in_car <= nb_persons - nb_agents:
                 n_people.append(nb_in_car)
