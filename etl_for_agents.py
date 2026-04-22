@@ -5,6 +5,7 @@ import osmnx
 from networkx.classes.multidigraph import MultiDiGraph
 
 from etl_population_density import population_density_Lappeenranta
+from etl_telia_travel import average_number_car_bikes
 from export_functions import export_population_density
 
 # Paths definition
@@ -28,6 +29,19 @@ LAPPEENRANTA = ['Lappeenranta', 'Imatra', 'Lemi', 'Luumäki', 'Miehikkälä', 'S
 
 ENTRIES_VISITS = ['visit_count', 'resident_visit_count', 'worker_visit_count',
                   'non_resident_non_worker_visit_count']
+
+
+# --------------------------------------------------------------------
+def merge_datasets(
+        visits: geopandas.GeoDataFrame,
+        cars: geopandas.GeoDataFrame | None = None,
+        weekdays: bool = True
+) -> geopandas.GeoDataFrame:
+    print("Combine the population density and number of cars")
+    # gdf['nb_bikes'] = gdf['total_visits'] * FRACTION_BIKES
+    new_gdf = average_number_car_bikes(visits, weekdays=weekdays)
+
+    return new_gdf
 
 
 # --------------------------------------------------------------------
@@ -73,6 +87,7 @@ def export_data(
 
 print('Population density')
 population_density, osm_graph = population_density_Lappeenranta()
+population_density = merge_datasets(population_density, weekdays=WEEKDAYS)
 
 print('Export data')
 export_data(population_density, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_population_density.csv",

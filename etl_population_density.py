@@ -18,9 +18,6 @@ DOWNLOAD_OSM = False
 CRS = 25835
 DOWNLOAD_OSM = False
 WEEKDAYS = True
-FRACTION_CARS = 0.59
-FRACTION_BIKES = 0.16
-AVERAGE_CAR_OCCUPANCY = [1.3, 1.7]
 
 MUNICIPALITIES_DATA = DATA_DIRECTORY / "finland_municipalities_2021.gpkg"
 POPULATION_CENSUS_2021_AT_100m = (DATA_DIRECTORY / "JRC-ESTAT_Census_Population_2021_100m" /
@@ -319,24 +316,6 @@ def average_population_density(
 
 
 # --------------------------------------------------------------------
-def average_number_car_bikes(
-        gdf: geopandas.GeoDataFrame,
-        *,
-        time_period: tuple[int, int] = (0, 24),
-        month: int | None = None,
-        season: str | None = 'spring',
-        weekdays: bool = True
-) -> geopandas.GeoDataFrame:
-    if (weekdays):
-        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[0]
-    else:
-        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[1]
-    gdf['nb_bikes'] = gdf['total_visits'] * FRACTION_BIKES
-
-    return gdf
-
-
-# --------------------------------------------------------------------
 def population_density_Lappeenranta():
     print('  Read data')
     sub_telia, osm_graph = read_Lappeenranta(time_period=(4, 6), season="spring", weekdays=WEEKDAYS, crs=CRS,
@@ -344,7 +323,6 @@ def population_density_Lappeenranta():
 
     print('  Derive population density')
     population_density = average_population_density(sub_telia, time_period=(4, 6))
-    population_density = average_number_car_bikes(population_density,weekdays=WEEKDAYS)
 
     return population_density, osm_graph
 

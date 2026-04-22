@@ -15,6 +15,9 @@ OUTPUT_DIRECTORY = DATA_DIRECTORY / "output"
 
 CRS = 25835
 WEEKDAYS = True
+FRACTION_CARS = 0.59
+FRACTION_BIKES = 0.16
+AVERAGE_CAR_OCCUPANCY = [1.3, 1.7]
 
 MUNICIPALITIES_DATA = DATA_DIRECTORY / "finland_municipalities_2021.gpkg"
 
@@ -233,6 +236,24 @@ def read_Lappeenranta(*,
 
 
     return sub_telia
+
+
+# --------------------------------------------------------------------
+def average_number_car_bikes(
+        gdf: geopandas.GeoDataFrame,
+        *,
+        time_period: tuple[int, int] = (0, 24),
+        month: int | None = None,
+        season: str | None = 'spring',
+        weekdays: bool = True
+) -> geopandas.GeoDataFrame:
+    if (weekdays):
+        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[0]
+    else:
+        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[1]
+    gdf['nb_bikes'] = gdf['total_visits'] * FRACTION_BIKES
+
+    return gdf
 
 
 # --------------------------------------------------------------------
