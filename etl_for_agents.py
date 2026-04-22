@@ -4,7 +4,7 @@ import geopandas
 import osmnx
 from networkx.classes.multidigraph import MultiDiGraph
 
-from etl_telia import population_density_Lappeenranta
+from etl_population_density import population_density_Lappeenranta
 from export_functions import export_population_density
 
 # Paths definition
