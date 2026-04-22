@@ -325,7 +325,7 @@ def average_number_car_bikes(
         season: str | None = 'spring',
         weekdays: bool = True
 ) -> geopandas.GeoDataFrame:
-    if(weekdays):
+    if (weekdays):
         gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[0]
     else:
         gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[1]
