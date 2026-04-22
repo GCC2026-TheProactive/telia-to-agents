@@ -2,6 +2,7 @@ import pathlib
 
 import duckdb
 import geopandas
+from tqdm import tqdm
 import pandas as pd
 from networkx.classes.multidigraph import MultiDiGraph
 
@@ -14,6 +15,7 @@ TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_trips"
 OUTPUT_DIRECTORY = DATA_DIRECTORY / "output"
 
 CRS = 25835
+WEEKDAYS = True
 
 MUNICIPALITIES_DATA = DATA_DIRECTORY / "finland_municipalities_2021.gpkg"
 
@@ -44,8 +46,8 @@ def add_geometry(
             Telia's data with the associated geometry
     """
     filename = pathlib.Path(path) / "finland_telia_grid_EPSG3067.gpkg"
-    gdf = read_shp(filename, crs=crs)
-    merged = df.merge(gdf, how="inner", left_on=df.columns[0],
+    grid = read_shp(filename, crs=crs)
+    merged = df.merge(grid, how="inner", left_on=df.columns[0],
                       right_on="location_id")
 
     return geopandas.GeoDataFrame(merged, geometry=merged['geometry'])
@@ -83,9 +85,111 @@ def read_parquet(
 
 
 # --------------------------------------------------------------------
-def read_Lappeenranta(
-        crs: int | str = 3067
-) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
+def extract_season(
+        gdf: geopandas.GeoDataFrame,
+        season: str = 'spring'
+) -> geopandas.GeoDataFrame:
+    """
+    Extract the Telia's data corresponding to the given season.
+
+    Parameters
+    ----------
+    gdf: geopandas.GeoDataFrame
+            Telia's data for the region of interest with
+            the associated geometry
+    season: str
+            season of interest
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            Telia's data for the season of interest
+    """
+    month = gdf['observation_start_datetime'].dt.month
+
+    if season == 'spring':
+        return gdf[month.isin([3, 4, 5])]
+    elif season == 'summer':
+        return gdf[month.isin([6, 7, 8])]
+    elif season in ['fall', 'autumn']:
+        return gdf[month.isin([9, 10, 11])]
+    elif season == 'winter':
+        return gdf[month.isin([12, 1, 2])]
+
+
+# --------------------------------------------------------------------
+def extract_month(
+        gdf: geopandas.GeoDataFrame,
+        month: int
+) -> geopandas.GeoDataFrame:
+    """
+    Extract the Telia's data corresponding to a given month.
+
+    Parameters
+    ----------
+    gdf: geopandas.GeoDataFrame
+            Telia's data for the region of interest with
+            the associated geometry
+    month: int
+            month of interest
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            Telia's data for the month of interest
+    """
+
+    return gdf[gdf['observation_start_datetime'].dt.month == month]
+
+
+# --------------------------------------------------------------------
+def extract_time_period(
+        gdf: geopandas.GeoDataFrame,
+        time_period: tuple[int, int] = (0, 24),
+        weekdays: bool = True,
+) -> geopandas.GeoDataFrame:
+    """
+    Extract the time period during the day and the week from
+    the Telia data.
+
+    Parameters
+    ----------
+    gdf: geopandas.GeoDataFrame
+            Telia's data for the region of interest with
+            the associated geometry
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            Telia's data for the time period of interest
+    """
+    hour = gdf['observation_start_datetime'].dt.hour
+
+    if time_period[0] < time_period[1]:
+        sub_gdf = gdf[(time_period[0] <= hour) & (hour < time_period[1])]
+    elif time_period[0] > time_period[1]:
+        sub_gdf = gdf[(time_period[1] <= hour) | (hour < time_period[0])]
+    elif time_period[0] == time_period[1]:
+        sub_gdf = gdf[(hour == time_period[0])]
+
+    if weekdays:
+        return sub_gdf[sub_gdf['observation_start_datetime'].dt.weekday <= 4]
+    else:
+        return sub_gdf[sub_gdf['observation_start_datetime'].dt.weekday > 4]
+
+
+# --------------------------------------------------------------------
+def read_Lappeenranta(*,
+                      time_period: tuple[int, int] = (0, 24),
+                      month: int | None = None,
+                      season: str | None = 'spring',
+                      weekdays: bool = True,
+                      crs: int | str = 3067
+                      ) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
     """
     Read the Telia's dataset and extract the data corresponding to
     the area surrounding Lappeenranta.
@@ -108,20 +212,28 @@ def read_Lappeenranta(
 
     print("    Read Telia trip data")
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "trips_grid_hourly_ekarjala_2025.parquet", crs=crs)
-    origins = add_geometry(telia_gdf[['location_id_origin']],
+
+    print("    Extract the time period")
+    if month is not None:
+        month_gdf = extract_month(telia_gdf, month)
+        sub_gdf = extract_time_period(month_gdf, time_period, weekdays)
+        sub_gdf = month_gdf.copy()
+    else:
+        season_gdf = extract_season(telia_gdf, season)
+        sub_gdf = extract_time_period(season_gdf, time_period, weekdays)
+        sub_gdf = season_gdf.copy()
+
+    print("    Extract Lappeenranta area")
+    origins = add_geometry(sub_gdf[['location_id_origin']],
                            TELIA_DATA_DIRECTORY, crs)
-    destinations = add_geometry(telia_gdf[['location_id_destination']],
+    destinations = add_geometry(sub_gdf[['location_id_destination']],
                                 TELIA_DATA_DIRECTORY, crs)
+    sub_orig = geopandas.sjoin(origins, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
+    sub_dest = geopandas.sjoin(destinations, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
 
-    sub_orig = geopandas.sjoin(origins, sub_area[['NAMEFIN', 'geometry']],
-                               how="inner",
-                               predicate="intersects")
-    sub_dest = geopandas.sjoin(destinations, sub_area[['NAMEFIN', 'geometry']],
-                               how="inner",
-                               predicate="intersects")
+    sub_telia = sub_gdf[(sub_gdf['location_id_origin'].isin(sub_orig['location_id_origin'].to_list())) |
+                        (sub_gdf['location_id_destination'].isin(sub_dest['location_id_destination'].to_list()))]
 
-    sub_telia = telia_gdf[(telia_gdf['location_id_origin'].isin(sub_orig['location_id_origin'].to_list())) |
-                          (telia_gdf['location_id_destination'].isin(sub_dest['location_id_destination'].to_list()))]
 
     return sub_telia
 
@@ -129,4 +241,4 @@ def read_Lappeenranta(
 # --------------------------------------------------------------------
 
 print('Read data')
-sub_telia = read_Lappeenranta(crs=CRS)
+sub_telia = read_Lappeenranta(time_period=(4, 6), season="spring", weekdays=WEEKDAYS, crs=CRS)
