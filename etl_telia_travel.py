@@ -2,9 +2,8 @@ import pathlib
 
 import duckdb
 import geopandas
-from tqdm import tqdm
 import pandas as pd
-from networkx.classes.multidigraph import MultiDiGraph
+from tqdm import tqdm
 
 from geoanalysis_functions import read_shp
 
@@ -189,7 +188,7 @@ def read_Lappeenranta(*,
                       season: str | None = 'spring',
                       weekdays: bool = True,
                       crs: int | str = 3067
-                      ) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
+                      ) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset and extract the data corresponding to
     the area surrounding Lappeenranta.
@@ -204,8 +203,6 @@ def read_Lappeenranta(*,
     geopandas.GeoDataFrame
             Telia's data for the surroundings of Lappeenranta with
             the associated geometry
-    MultiDiGraph
-            OpenStreetMap graph for the area covered by the return Telia data
     """
     municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
