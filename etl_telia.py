@@ -15,6 +15,8 @@ DATA_DIRECTORY = NOTEBOOK_PATH / "data"
 TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_hourly_visits"
 OUTPUT_DIRECTORY = DATA_DIRECTORY / "output"
 
+DOWNLOAD_OSM = False
+
 CRS = 25835
 
 MUNICIPALITIES_DATA = DATA_DIRECTORY / "finland_municipalities_2021.gpkg"
@@ -219,20 +221,25 @@ def read_capital_area(*,
     print("    Read Telia visit data")
     telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=crs)
 
-
-    print("    Read OSM data")
-    try:
-        graph = osmnx.io.load_graphml(DATA_DIRECTORY / "Capital_area_osm.graphml")
-    except:
-        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all())
+    print("    Extract the time period")
     if month is not None:
         month_gdf = extract_month(telia_gdf, month)
         sub_df = extract_time_period(month_gdf, time_period, weekdays)
     else:
         season_gdf = extract_season(telia_gdf, season)
         sub_df = extract_time_period(season_gdf, time_period, weekdays)
+
     print("    Extract the sub area")
     sub_telia = geopandas.sjoin(sub_df, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
+
+    if download_osm:
+        print("    Download OSM data")
+        osmnx.settings.all_oneway = True
+        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all(), simplify=False)
+        osmnx.io.save_graphml(graph, filepath=DATA_DIRECTORY / "output" / "Capital_area_osm.graphml")
+        osmnx.io.save_graph_geopackage(graph, filepath=DATA_DIRECTORY / "output" / "Capital_area_osm.gpkg")
+    else:
+        graph = None
 
     return sub_telia, graph
 
@@ -276,18 +283,18 @@ def read_Lappeenranta(*,
     else:
         season_gdf = extract_season(telia_gdf, season)
         sub_df = extract_time_period(season_gdf, time_period, weekdays)
+
     print("    Extract the sub area")
     sub_telia = geopandas.sjoin(sub_df, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
 
-    print("    Read OSM data")
-    try:
-        graph = osmnx.io.load_graphml(DATA_DIRECTORY / "output" / "Lappeenranta_osm.graphml", simplify=False)
-    except:
+    if download_osm:
+        print("    Download OSM data")
         osmnx.settings.all_oneway = True
         graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all(), simplify=False)
         osmnx.io.save_graphml(graph, filepath=DATA_DIRECTORY / "output" / "Lappeenranta_osm.graphml")
         osmnx.io.save_graph_geopackage(graph, filepath=DATA_DIRECTORY / "output" / "Lappeenranta_osm.gpkg")
-
+    else:
+        graph = None
 
     return sub_telia, graph
 
@@ -340,7 +347,7 @@ def average_population_density(
 # --------------------------------------------------------------------
 def export_data(
         gdf: geopandas.GeoDataFrame,
-        graph: MultiDiGraph,
+        graph: MultiDiGraph | None,
         outfile_pop_dens: str | pathlib.PosixPath | pathlib.Path,
         outfile_osm: str | pathlib.PosixPath | pathlib.Path,
         weekdays: bool = True
@@ -367,10 +374,11 @@ def export_data(
     print("    Export population density")
     export_population_density(gdf, outfile_pop_dens, CRS, weekdays)
 
-    print("    Export OSM data")
-    osmnx.settings.all_oneway = True
-    projected_graph = osmnx.projection.project_graph(graph, to_crs=f"EPSG:{CRS}")
-    osmnx.io.save_graph_xml(projected_graph, filepath=outfile_osm)
+    if graph is not None:
+        print("    Export OSM data")
+        osmnx.settings.all_oneway = True
+        projected_graph = osmnx.projection.project_graph(graph, to_crs=f"EPSG:{CRS}")
+        osmnx.io.save_graph_xml(projected_graph, filepath=outfile_osm)
 
     return
 
@@ -380,7 +388,7 @@ def export_data(
 print('Read data')
 # sub_telia = read_capital_area(crs=3067)
 sub_telia, osm_graph = read_Lappeenranta(time_period=(4, 6), season="spring", weekdays=WEEKDAYS, crs=CRS,
-                                         download_osm=DOWNLOAS_OSM)
+                                         download_osm=DOWNLOAD_OSM)
 
 print('Derive population density')
 population_density = average_population_density(sub_telia, time_period=(4, 6))
