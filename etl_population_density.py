@@ -16,6 +16,9 @@ OUTPUT_DIRECTORY = DATA_DIRECTORY / "output"
 CRS = 25835
 DOWNLOAD_OSM = False
 WEEKDAYS = True
+FRACTION_CARS = 0.59
+FRACTION_BIKES = 0.16
+AVERAGE_CAR_OCCUPANCY = [1.3, 1.7]
 
 MUNICIPALITIES_DATA = DATA_DIRECTORY / "finland_municipalities_2021.gpkg"
 POPULATION_CENSUS_2021_AT_100m = (DATA_DIRECTORY / "JRC-ESTAT_Census_Population_2021_100m" /
@@ -322,7 +325,10 @@ def average_number_car_bikes(
         season: str | None = 'spring',
         weekdays: bool = True
 ) -> geopandas.GeoDataFrame:
-    gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS
+    if(weekdays):
+        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[0]
+    else:
+        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[1]
     gdf['nb_bikes'] = gdf['total_visits'] * FRACTION_BIKES
 
     return gdf
