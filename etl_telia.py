@@ -16,6 +16,7 @@ TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_hourly_visits"
 OUTPUT_DIRECTORY = DATA_DIRECTORY / "output"
 
 DOWNLOAD_OSM = False
+WEEKDAYS = True
 
 CRS = 25835
 
@@ -330,7 +331,7 @@ def average_population_density(
     duration = time_period[1] - time_period[0]
 
     print('    Derive the population density')
-    visits = sub_df[ENTRIES_VISITS + ['geometry']]
+    visits = gdf[ENTRIES_VISITS + ['geometry']]
     visits['total_visits'] = visits[ENTRIES_VISITS].sum(axis=1)
     avg_visits = visits.groupby('geometry').mean().reset_index()
     for entry in ENTRIES_VISITS + ['total_visits']:
@@ -341,7 +342,7 @@ def average_population_density(
     new_gdf['area_km2'] = new_gdf.area / 1e6
     new_gdf['density'] = new_gdf['total_visits'] / new_gdf['area_km2']
 
-    return gdf
+    return new_gdf
 
 
 # --------------------------------------------------------------------
@@ -372,7 +373,7 @@ def export_data(
     -------
     """
     print("    Export population density")
-    export_population_density(gdf, outfile_pop_dens, CRS, weekdays)
+    export_population_density(gdf, outfile_pop_dens, CRS)
 
     if graph is not None:
         print("    Export OSM data")
@@ -392,7 +393,6 @@ sub_telia, osm_graph = read_Lappeenranta(time_period=(4, 6), season="spring", we
 
 print('Derive population density')
 population_density = average_population_density(sub_telia, time_period=(4, 6))
-population_density = average_number_car_bikes(population_density, weekdays=WEEKDAYS)
 
 print('Export data')
 export_data(population_density, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_population_density.csv",
