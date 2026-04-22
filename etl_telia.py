@@ -90,93 +90,6 @@ def read_parquet(
 
 
 # --------------------------------------------------------------------
-def read_capital_area(
-        crs: int | str = 3067
-) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
-    """
-    Read the Telia's dataset and extract the data corresponding to
-    the capital area.
-
-    Parameters
-    ----------
-    crs: int or str
-            the desired output CRS (default: 3067)
-
-    Returns
-    -------
-    geopandas.GeoDataFrame
-            Telia's data for the capital area with the associated
-            geometry
-    MultiDiGraph
-            OpenStreetMap graph for the area covered by the return Telia data
-    """
-    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
-    sub_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
-
-    print("    Read Telia visit data")
-    telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=crs)
-    sub_gdf = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
-
-    # print("    Read population census 2021")
-    # pop_census_2021 = read_raster(POPULATION_CENSUS_2021_AT_100m, crs=crs)
-    # clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
-    # clipped_pop_census_2021 = xr.where(clipped_pop_census_2021>=0, clipped_pop_census_2021, np.nan)
-
-    print("    Read OSM data")
-    try:
-        graph = osmnx.io.load_graphml(DATA_DIRECTORY / "Capital_area_osm.graphml")
-    except:
-        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all())
-
-    return sub_gdf, graph
-
-
-# --------------------------------------------------------------------
-def read_Lappeenranta(
-        crs: int | str = 3067
-) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
-    """
-    Read the Telia's dataset and extract the data corresponding to
-    the area surrounding Lappeenranta.
-
-    Parameters
-    ----------
-    crs: int or str
-            the desired output CRS (default: 3067)
-
-    Returns
-    -------
-    geopandas.GeoDataFrame
-            Telia's data for the surroundings of Lappeenranta with
-            the associated geometry
-    MultiDiGraph
-            OpenStreetMap graph for the area covered by the return Telia data
-    """
-    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
-    sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
-
-    print("    Read Telia visit data")
-    telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet", crs=crs)
-    sub_gdf = geopandas.sjoin(telia_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
-
-    # print("    Read population census 2021")
-    # pop_census_2021 = read_raster(POPULATION_CENSUS_2021_AT_100m, crs=crs)
-    # clipped_pop_census_2021 = pop_census_2021.rio.clip(sub_area.geometry.values,sub_area.crs)
-    # clipped_pop_census_2021 = xr.where(clipped_pop_census_2021 >= 0, clipped_pop_census_2021, np.nan)
-
-    print("    Read OSM data")
-    try:
-        graph = osmnx.io.load_graphml(DATA_DIRECTORY / "output" / "Lappeenranta_osm.graphml", simplify=False)
-    except:
-        osmnx.settings.all_oneway = True
-        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all(), simplify=False)
-        osmnx.io.save_graphml(graph, filepath=DATA_DIRECTORY / "output" / "Lappeenranta_osm.graphml")
-        osmnx.io.save_graph_geopackage(graph, filepath=DATA_DIRECTORY / "output" / "Lappeenranta_osm.gpkg")
-
-    return sub_gdf, graph
-
-
-# --------------------------------------------------------------------
 def extract_season(
         gdf: geopandas.GeoDataFrame,
         season: str = 'spring'
@@ -275,13 +188,115 @@ def extract_time_period(
 
 
 # --------------------------------------------------------------------
+def read_capital_area(*,
+                      time_period: tuple[int, int] = (0, 24),
+                      month: int | None = None,
+                      season: str | None = 'spring',
+                      weekdays: bool = True,
+                      crs: int | str = 3067,
+                      download_osm: bool = False
+                      ) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
+    """
+    Read the Telia's dataset and extract the data corresponding to
+    the capital area.
+
+    Parameters
+    ----------
+    crs: int or str
+            the desired output CRS (default: 3067)
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            Telia's data for the capital area with the associated
+            geometry
+    MultiDiGraph
+            OpenStreetMap graph for the area covered by the return Telia data
+    """
+    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
+    sub_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
+
+    print("    Read Telia visit data")
+    telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=crs)
+
+
+    print("    Read OSM data")
+    try:
+        graph = osmnx.io.load_graphml(DATA_DIRECTORY / "Capital_area_osm.graphml")
+    except:
+        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all())
+    if month is not None:
+        month_gdf = extract_month(telia_gdf, month)
+        sub_df = extract_time_period(month_gdf, time_period, weekdays)
+    else:
+        season_gdf = extract_season(telia_gdf, season)
+        sub_df = extract_time_period(season_gdf, time_period, weekdays)
+    print("    Extract the sub area")
+    sub_telia = geopandas.sjoin(sub_df, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
+
+    return sub_telia, graph
+
+
+# --------------------------------------------------------------------
+def read_Lappeenranta(*,
+                      time_period: tuple[int, int] = (0, 24),
+                      month: int | None = None,
+                      season: str | None = 'spring',
+                      weekdays: bool = True,
+                      crs: int | str = 3067,
+                      download_osm: bool = False
+                      ) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
+    """
+    Read the Telia's dataset and extract the data corresponding to
+    the area surrounding Lappeenranta.
+
+    Parameters
+    ----------
+    crs: int or str
+            the desired output CRS (default: 3067)
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            Telia's data for the surroundings of Lappeenranta with
+            the associated geometry
+    MultiDiGraph
+            OpenStreetMap graph for the area covered by the return Telia data
+    """
+    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
+    sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
+
+    print("    Read Telia visit data")
+    telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet", crs=crs)
+
+    print("    Extract the time period")
+    if month is not None:
+        month_gdf = extract_month(telia_gdf, month)
+        sub_df = extract_time_period(month_gdf, time_period, weekdays)
+    else:
+        season_gdf = extract_season(telia_gdf, season)
+        sub_df = extract_time_period(season_gdf, time_period, weekdays)
+    print("    Extract the sub area")
+    sub_telia = geopandas.sjoin(sub_df, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
+
+    print("    Read OSM data")
+    try:
+        graph = osmnx.io.load_graphml(DATA_DIRECTORY / "output" / "Lappeenranta_osm.graphml", simplify=False)
+    except:
+        osmnx.settings.all_oneway = True
+        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all(), simplify=False)
+        osmnx.io.save_graphml(graph, filepath=DATA_DIRECTORY / "output" / "Lappeenranta_osm.graphml")
+        osmnx.io.save_graph_geopackage(graph, filepath=DATA_DIRECTORY / "output" / "Lappeenranta_osm.gpkg")
+
+
+    return sub_telia, graph
+
+
+# --------------------------------------------------------------------
 def average_population_density(
         gdf: geopandas.GeoDataFrame,
         *,
         time_period: tuple[int, int] = (0, 24),
-        month: int | None = None,
-        season: str | None = 'spring',
-        weekdays: bool = True
 ) -> geopandas.GeoDataFrame:
     """
     Extract the subset of the Telia data of interest.
@@ -305,14 +320,7 @@ def average_population_density(
     geopandas.GeoDataFrame
             subset of Telia data
     """
-    print("    Extract the time period")
     duration = time_period[1] - time_period[0]
-    if month is not None:
-        month_gdf = extract_month(gdf, month)
-        sub_df = extract_time_period(month_gdf, time_period, weekdays)
-    else:
-        season_gdf = extract_season(gdf, season)
-        sub_df = extract_time_period(season_gdf, time_period, weekdays)
 
     print('    Derive the population density')
     visits = sub_df[ENTRIES_VISITS + ['geometry']]
@@ -321,10 +329,10 @@ def average_population_density(
     for entry in ENTRIES_VISITS + ['total_visits']:
         avg_visits[entry] = avg_visits[entry] / duration
 
-    gdf = geopandas.GeoDataFrame(avg_visits, geometry=avg_visits['geometry'])
+    new_gdf = geopandas.GeoDataFrame(avg_visits, geometry=avg_visits['geometry'])
 
-    gdf['area_km2'] = gdf.area / 1e6
-    gdf['density'] = gdf['total_visits'] / gdf['area_km2']
+    new_gdf['area_km2'] = new_gdf.area / 1e6
+    new_gdf['density'] = new_gdf['total_visits'] / new_gdf['area_km2']
 
     return gdf
 
@@ -334,7 +342,8 @@ def export_data(
         gdf: geopandas.GeoDataFrame,
         graph: MultiDiGraph,
         outfile_pop_dens: str | pathlib.PosixPath | pathlib.Path,
-        outfile_osm: str | pathlib.PosixPath | pathlib.Path
+        outfile_osm: str | pathlib.PosixPath | pathlib.Path,
+        weekdays: bool = True
 ) -> None:
     """
     Export the population density and OpenStreetMap datasets.
@@ -349,30 +358,34 @@ def export_data(
             path of the output file for the population density data
     outfile_osm: str or pathlib.PosixPath or pathlib.Path
             path of the output file for the OpenStreetMap data
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
 
     Returns
     -------
     """
     print("    Export population density")
-    export_population_density(gdf, outfile_pop_dens, CRS)
+    export_population_density(gdf, outfile_pop_dens, CRS, weekdays)
 
     print("    Export OSM data")
     osmnx.settings.all_oneway = True
     projected_graph = osmnx.projection.project_graph(graph, to_crs=f"EPSG:{CRS}")
     osmnx.io.save_graph_xml(projected_graph, filepath=outfile_osm)
 
-    return 0
+    return
 
 
 # --------------------------------------------------------------------
 
 print('Read data')
 # sub_telia = read_capital_area(crs=3067)
-sub_telia, osm_graph = read_Lappeenranta(crs=CRS)
+sub_telia, osm_graph = read_Lappeenranta(time_period=(4, 6), season="spring", weekdays=WEEKDAYS, crs=CRS,
+                                         download_osm=DOWNLOAS_OSM)
 
-print('Population density')
-population_density = average_population_density(sub_telia, time_period=(4, 6), season="spring")
+print('Derive population density')
+population_density = average_population_density(sub_telia, time_period=(4, 6))
+population_density = average_number_car_bikes(population_density, weekdays=WEEKDAYS)
 
 print('Export data')
 export_data(population_density, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_population_density.csv",
-            outfile_osm=OUTPUT_DIRECTORY / "Lappeenranta.osm")
+            outfile_osm=OUTPUT_DIRECTORY / "Lappeenranta.osm", weekdays=WEEKDAYS)

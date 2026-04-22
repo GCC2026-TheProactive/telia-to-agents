@@ -116,5 +116,3 @@ def extract_area(data: geopandas.GeoDataFrame | xarray.core.dataarray.DataArray,
         return sub_data
 
 # --------------------------------------------------------------------
-
-
