@@ -7,7 +7,7 @@ from networkx.classes.multidigraph import MultiDiGraph
 
 from constants import *
 from geoanalysis_functions import read_shp, read_parquet
-from data_manipulation_functions import extract_season,extract_month
+from data_manipulation_functions import extract_season, extract_month
 
 ENTRIES_VISITS = ['visit_count', 'resident_visit_count', 'worker_visit_count',
                   'non_resident_non_worker_visit_count']
@@ -125,8 +125,8 @@ def read_capital_area(
 
     print("    Read Telia visit data")
     telia_df = read_parquet(TELIA_VISITS_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet")
-    telia_df = telia_df.rename(columns = {"observation_start_date": "observation_start_datetime"})
-    telia_df = telia_df.rename(columns = {"observation_end_date": "observation_end_datetime"})
+    telia_df = telia_df.rename(columns={"observation_start_date": "observation_start_datetime"})
+    telia_df = telia_df.rename(columns={"observation_end_date": "observation_end_datetime"})
 
     print("    Extract the time period")
     if month is not None:
@@ -194,8 +194,8 @@ def read_Lappeenranta(
 
     print("    Read Telia visit data")
     telia_df = read_parquet(TELIA_VISITS_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet")
-    telia_df = telia_df.rename(columns = {"observation_start_date": "observation_start_datetime"})
-    telia_df = telia_df.rename(columns = {"observation_end_date": "observation_end_datetime"})
+    telia_df = telia_df.rename(columns={"observation_start_date": "observation_start_datetime"})
+    telia_df = telia_df.rename(columns={"observation_end_date": "observation_end_datetime"})
 
     print("    Extract the time period")
     if month is not None:
