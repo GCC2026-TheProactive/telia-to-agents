@@ -229,7 +229,7 @@ def average_population_density(
 # --------------------------------------------------------------------
 def population_density_Lappeenranta(
         *,
-        time_period: tuple[int, int] = (4, 6),
+        time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
         season: str | None = None,
         weekdays: bool = True,

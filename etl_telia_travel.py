@@ -224,6 +224,9 @@ def average_number_bikes(
 # --------------------------------------------------------------------
 def number_cars_Lappeenranta(
         *,
+        time_period: tuple[int, int] = (0, 24),
+        month: int | None = None,
+        season: str | None = None,
         weekdays: bool = True,
         crs: int | str = 3067,
 ) -> geopandas.GeoDataFrame:
@@ -233,6 +236,12 @@ def number_cars_Lappeenranta(
 
     Parameters
     ----------
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    month: int
+            month of interest
+    season: str
+            season of interest
     weekdays: bool
             specify whether to extract the weekdays or the weekend
     crs: int or str
@@ -243,14 +252,10 @@ def number_cars_Lappeenranta(
     geopandas.GeoDataFrame
             Telia's data for the surroundings of Lappeenranta with
             the associated geometry
-    MultiDiGraph
-            OpenStreetMap graph for the area covered by the return Telia data
     """
-    print('Read data')
-    sub_telia = read_Lappeenranta(time_period=(4, 6), season="spring", weekdays=weekdays, crs=crs)
+    print('  Read data')
+    sub_telia = read_Lappeenranta(month=month, season=season, crs=crs)
 
-    # print('  Derive population density')
-    # population_density = average_population_density(sub_telia, time_period=(4, 6))
 
     print('  Derive number of cars')
     number_cars = average_number_cars(sub_telia, time_period=time_period, weekdays=weekdays, crs=crs)
