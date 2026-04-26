@@ -45,10 +45,8 @@ def add_geometry(
 # --------------------------------------------------------------------
 def read_Lappeenranta(
         *,
-        time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
         season: str | None = None,
-        weekdays: bool = True,
         crs: int | str = 3067
 ) -> geopandas.GeoDataFrame:
     """
@@ -57,14 +55,10 @@ def read_Lappeenranta(
 
     Parameters
     ----------
-    time_period: tuple of int
-            starting hour and ending hour to extract
     month: int
             month of interest
     season: str
             season of interest
-    weekdays: bool
-            specify whether to extract the weekdays or the weekend
     crs: int or str
             the desired output CRS (default: 3067)
 
@@ -85,11 +79,9 @@ def read_Lappeenranta(
     print("    Extract the time period")
     if month is not None:
         month_df = extract_month(telia_df, month)
-        sub_df = extract_time_period(month_df, time_period, weekdays)
         sub_df = month_df.copy()
     elif season is not None:
         season_df = extract_season(telia_df, season)
-        sub_df = extract_time_period(season_df, time_period, weekdays)
         sub_df = season_df.copy()
     else:
         sub_df = telia_df.copy()
