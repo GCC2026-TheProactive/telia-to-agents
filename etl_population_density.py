@@ -246,7 +246,10 @@ def average_population_density(
     geopandas.GeoDataFrame
             subset of Telia data
     """
-    duration = time_period[1] - time_period[0]
+    if time_period[0] < time_period[1]:
+        duration = time_period[1] - time_period[0]
+    else:
+        duration = (24-time_period[0]) + time_period[1]
 
     print('    Derive the population density')
     visits = gdf[ENTRIES_VISITS + ['geometry']]
