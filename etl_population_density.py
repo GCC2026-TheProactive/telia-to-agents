@@ -6,8 +6,8 @@ import pandas as pd
 from networkx.classes.multidigraph import MultiDiGraph
 
 from constants import *
+from data_manipulation_functions import extract_season, extract_month, extract_time_period
 from geoanalysis_functions import read_shp, read_parquet
-from data_manipulation_functions import extract_season, extract_month
 
 ENTRIES_VISITS = ['visit_count', 'resident_visit_count', 'worker_visit_count',
                   'non_resident_non_worker_visit_count']
@@ -41,46 +41,6 @@ def add_geometry(
     merged = df.merge(gdf, how="inner", on="location_id")
 
     return geopandas.GeoDataFrame(merged, geometry=merged['geometry'])
-
-
-# --------------------------------------------------------------------
-def extract_time_period(
-        df: pd.DataFrame,
-        time_period: tuple[int, int] = (0, 24),
-        weekdays: bool = True,
-) -> pd.DataFrame:
-    """
-    Extract the time period during the day and the week from
-    the Telia data.
-
-    Parameters
-    ----------
-    df: pd.DataFrame
-            Telia's data for the region of interest with
-            the associated geometry
-    time_period: tuple of int
-            starting hour and ending hour to extract
-    weekdays: bool
-            specify whether to extract the weekdays or the weekend
-
-    Returns
-    -------
-    geopandas.GeoDataFrame
-            Telia's data for the time period of interest
-    """
-    hour = df['observation_start_datetime'].dt.hour
-
-    if time_period[0] < time_period[1]:
-        sub_gdf = df[(time_period[0] <= hour) & (hour < time_period[1])]
-    elif time_period[0] > time_period[1]:
-        sub_gdf = df[(time_period[1] <= hour) | (hour < time_period[0])]
-    elif time_period[0] == time_period[1]:
-        sub_gdf = df[(hour == time_period[0])]
-
-    if weekdays:
-        return sub_gdf[sub_gdf['observation_start_datetime'].dt.weekday <= 4]
-    else:
-        return sub_gdf[sub_gdf['observation_start_datetime'].dt.weekday > 4]
 
 
 # --------------------------------------------------------------------
@@ -249,12 +209,12 @@ def average_population_density(
     if time_period[0] < time_period[1]:
         duration = time_period[1] - time_period[0]
     else:
-        duration = (24-time_period[0]) + time_period[1]
+        duration = (24 - time_period[0]) + time_period[1]
 
     print('    Derive the population density')
-    visits = gdf[ENTRIES_VISITS + ['location_id','geometry']]
+    visits = gdf[ENTRIES_VISITS + ['location_id', 'geometry']]
     visits['total_visits'] = visits[ENTRIES_VISITS].sum(axis=1)
-    avg_visits = visits.groupby(['location_id','geometry']).mean().reset_index()
+    avg_visits = visits.groupby(['location_id', 'geometry']).mean().reset_index()
     for entry in ENTRIES_VISITS + ['total_visits']:
         avg_visits[entry] = avg_visits[entry] / duration
 
@@ -269,7 +229,7 @@ def average_population_density(
 # --------------------------------------------------------------------
 def population_density_Lappeenranta(
         *,
-        time_period: tuple[int, int] = (4, 6),
+        time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
         season: str | None = None,
         weekdays: bool = True,

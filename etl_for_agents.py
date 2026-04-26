@@ -5,8 +5,8 @@ import osmnx
 from networkx.classes.multidigraph import MultiDiGraph
 
 from constants import *
+from etl_number_cars import average_number_bikes, number_cars_Lappeenranta
 from etl_population_density import population_density_Lappeenranta
-from etl_telia_travel import average_number_car, average_number_bikes, number_cars_Lappeenranta
 from export_functions import export_population_density
 
 ENTRIES_VISITS = ['visit_count', 'resident_visit_count', 'worker_visit_count',
@@ -16,11 +16,9 @@ ENTRIES_VISITS = ['visit_count', 'resident_visit_count', 'worker_visit_count',
 # --------------------------------------------------------------------
 def merge_datasets(
         visits: geopandas.GeoDataFrame,
-        cars: geopandas.GeoDataFrame | None = None,
-        weekdays: bool = True
+        cars: geopandas.GeoDataFrame
 ) -> geopandas.GeoDataFrame:
-    print("Combine the population density and number of cars")
-    visits_with_cars = average_number_car(visits, weekdays=weekdays)
+    visits_with_cars = visits.merge(cars, how="inner", on=["location_id", "geometry"])
     out_visits = average_number_bikes(visits_with_cars)
 
     return out_visits
@@ -67,14 +65,29 @@ def export_data(
 
 # --------------------------------------------------------------------
 
+time_period = (4, 6)
+month = None
+season = 'spring'
+
 print('Population density')
 population_density, osm_graph = population_density_Lappeenranta(
-    time_period=(4, 6), month=None, season='spring',
+    time_period=time_period, month=month, season=season,
     weekdays=WEEKDAYS, crs=CRS, download_osm=DOWNLOAD_OSM)
+
+print('Population density by night')
+population_night = population_density_Lappeenranta(
+    time_period=time_period, month=month, season=season,
+    weekdays=WEEKDAYS, crs=CRS, download_osm=DOWNLOAD_OSM)[0]
+
 print('Distribution of cars')
-number_cars = number_cars_Lappeenranta(weekdays=WEEKDAYS, crs=CRS)
-population_density = merge_datasets(population_density, number_cars, weekdays=WEEKDAYS)
+number_cars = number_cars_Lappeenranta(
+    population_night=population_night,
+    time_period=time_period, month=month, season=season,
+    weekdays=WEEKDAYS, crs=CRS)
+
+print("Combine the population density and number of cars")
+population_with_cars = merge_datasets(population_density, number_cars)
 
 print('Export data')
-export_data(population_density, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_population_density.csv",
+export_data(population_with_cars, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_agents.csv",
             outfile_osm=OUTPUT_DIRECTORY / "Lappeenranta.osm", weekdays=WEEKDAYS)
