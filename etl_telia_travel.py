@@ -6,7 +6,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from constants import *
-from data_manipulation_functions import extract_season, extract_month
+from data_manipulation_functions import extract_season, extract_month, extract_time_period
 from etl_population_density import population_density_Lappeenranta
 from geoanalysis_functions import read_shp, read_parquet
 
@@ -40,46 +40,6 @@ def add_geometry(
                       right_on="location_id")
 
     return geopandas.GeoDataFrame(merged, geometry=merged['geometry'])
-
-
-# --------------------------------------------------------------------
-def extract_time_period(
-        df: pd.DataFrame,
-        time_period: tuple[int, int] = (0, 24),
-        weekdays: bool = True,
-) -> pd.DataFrame:
-    """
-    Extract the time period during the day and the week from
-    the Telia data.
-
-    Parameters
-    ----------
-    df: pd.DataFrame
-            Telia's data for the region of interest with
-            the associated geometry
-    time_period: tuple of int
-            starting hour and ending hour to extract
-    weekdays: bool
-            specify whether to extract the weekdays or the weekend
-
-    Returns
-    -------
-    pd.DataFrame
-            Telia's data for the time period of interest
-    """
-    hour = df['observation_start_datetime'].dt.hour
-
-    if time_period[0] < time_period[1]:
-        sub_df = df[(time_period[0] <= hour) & (hour < time_period[1])]
-    elif time_period[0] > time_period[1]:
-        sub_df = df[(time_period[1] <= hour) | (hour < time_period[0])]
-    elif time_period[0] == time_period[1]:
-        sub_df = df[(hour == time_period[0])]
-
-    if weekdays:
-        return sub_df[sub_df['observation_start_datetime'].dt.weekday <= 4]
-    else:
-        return sub_df[sub_df['observation_start_datetime'].dt.weekday > 4]
 
 
 # --------------------------------------------------------------------
