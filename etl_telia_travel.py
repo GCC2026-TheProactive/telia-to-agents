@@ -138,13 +138,14 @@ def extract_time_period(
 
 
 # --------------------------------------------------------------------
-def read_Lappeenranta(*,
-                      time_period: tuple[int, int] = (0, 24),
-                      month: int | None = None,
-                      season: str | None = 'spring',
-                      weekdays: bool = True,
-                      crs: int | str = 3067
-                      ) -> geopandas.GeoDataFrame:
+def read_Lappeenranta(
+        *,
+        time_period: tuple[int, int] = (0, 24),
+        month: int | None = None,
+        season: str | None = 'spring',
+        weekdays: bool = True,
+        crs: int | str = 3067
+) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset and extract the data corresponding to
     the area surrounding Lappeenranta.

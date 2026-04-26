@@ -141,14 +141,15 @@ def extract_time_period(
 
 
 # --------------------------------------------------------------------
-def read_capital_area(*,
-                      time_period: tuple[int, int] = (0, 24),
-                      month: int | None = None,
-                      season: str | None = 'spring',
-                      weekdays: bool = True,
-                      crs: int | str = 3067,
-                      download_osm: bool = False
-                      ) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
+def read_capital_area(
+        *,
+        time_period: tuple[int, int] = (0, 24),
+        month: int | None = None,
+        season: str | None = 'spring',
+        weekdays: bool = True,
+        crs: int | str = 3067,
+        download_osm: bool = False
+) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
     """
     Read the Telia's dataset and extract the data corresponding to
     the capital area.
@@ -207,14 +208,15 @@ def read_capital_area(*,
 
 
 # --------------------------------------------------------------------
-def read_Lappeenranta(*,
-                      time_period: tuple[int, int] = (0, 24),
-                      month: int | None = None,
-                      season: str | None = 'spring',
-                      weekdays: bool = True,
-                      crs: int | str = 3067,
-                      download_osm: bool = False
-                      ) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
+def read_Lappeenranta(
+        *,
+        time_period: tuple[int, int] = (0, 24),
+        month: int | None = None,
+        season: str | None = 'spring',
+        weekdays: bool = True,
+        crs: int | str = 3067,
+        download_osm: bool = False
+) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
     """
     Read the Telia's dataset and extract the data corresponding to
     the area surrounding Lappeenranta.
@@ -275,7 +277,6 @@ def read_Lappeenranta(*,
 # --------------------------------------------------------------------
 def average_population_density(
         gdf: geopandas.GeoDataFrame,
-        *,
         time_period: tuple[int, int] = (0, 24),
 ) -> geopandas.GeoDataFrame:
     """
