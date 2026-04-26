@@ -1,11 +1,13 @@
 import pathlib
 
 import geopandas
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
 from constants import *
 from data_manipulation_functions import extract_season, extract_month
+from etl_population_density import population_density_Lappeenranta
 from geoanalysis_functions import read_shp, read_parquet
 
 
@@ -42,17 +44,17 @@ def add_geometry(
 
 # --------------------------------------------------------------------
 def extract_time_period(
-        gdf: geopandas.GeoDataFrame,
+        df: pd.DataFrame,
         time_period: tuple[int, int] = (0, 24),
         weekdays: bool = True,
-) -> geopandas.GeoDataFrame:
+) -> pd.DataFrame:
     """
     Extract the time period during the day and the week from
     the Telia data.
 
     Parameters
     ----------
-    gdf: geopandas.GeoDataFrame
+    df: pd.DataFrame
             Telia's data for the region of interest with
             the associated geometry
     time_period: tuple of int
@@ -62,22 +64,22 @@ def extract_time_period(
 
     Returns
     -------
-    geopandas.GeoDataFrame
+    pd.DataFrame
             Telia's data for the time period of interest
     """
-    hour = gdf['observation_start_datetime'].dt.hour
+    hour = df['observation_start_datetime'].dt.hour
 
     if time_period[0] < time_period[1]:
-        sub_gdf = gdf[(time_period[0] <= hour) & (hour < time_period[1])]
+        sub_df = df[(time_period[0] <= hour) & (hour < time_period[1])]
     elif time_period[0] > time_period[1]:
-        sub_gdf = gdf[(time_period[1] <= hour) | (hour < time_period[0])]
+        sub_df = df[(time_period[1] <= hour) | (hour < time_period[0])]
     elif time_period[0] == time_period[1]:
-        sub_gdf = gdf[(hour == time_period[0])]
+        sub_df = df[(hour == time_period[0])]
 
     if weekdays:
-        return sub_gdf[sub_gdf['observation_start_datetime'].dt.weekday <= 4]
+        return sub_df[sub_df['observation_start_datetime'].dt.weekday <= 4]
     else:
-        return sub_gdf[sub_gdf['observation_start_datetime'].dt.weekday > 4]
+        return sub_df[sub_df['observation_start_datetime'].dt.weekday > 4]
 
 
 # --------------------------------------------------------------------
@@ -85,7 +87,7 @@ def read_Lappeenranta(
         *,
         time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
-        season: str | None = 'spring',
+        season: str | None = None,
         weekdays: bool = True,
         crs: int | str = 3067
 ) -> geopandas.GeoDataFrame:
@@ -117,18 +119,20 @@ def read_Lappeenranta(
 
     print("    Read Telia trip data")
     telia_df = read_parquet(TELIA_TRIPS_DATA_DIRECTORY / "trips_grid_hourly_ekarjala_2025.parquet")
-    telia_df = telia_df.rename(columns = {"observation_start_date": "observation_start_datetime"})
-    telia_df = telia_df.rename(columns = {"observation_end_date": "observation_end_datetime"})
+    telia_df = telia_df.rename(columns={"observation_start_date": "observation_start_datetime"})
+    telia_df = telia_df.rename(columns={"observation_end_date": "observation_end_datetime"})
 
     print("    Extract the time period")
     if month is not None:
         month_df = extract_month(telia_df, month)
         sub_df = extract_time_period(month_df, time_period, weekdays)
         sub_df = month_df.copy()
-    else:
+    elif season is not None:
         season_df = extract_season(telia_df, season)
         sub_df = extract_time_period(season_df, time_period, weekdays)
         sub_df = season_df.copy()
+    else:
+        sub_df = telia_df.copy()
 
     print("    Extract Lappeenranta area")
     origins = add_geometry(sub_df[['location_id_origin']],
@@ -145,15 +149,112 @@ def read_Lappeenranta(
 
 
 # --------------------------------------------------------------------
-def average_number_car(
+def baseline_number_cars(
+        *,
+        weekdays: bool = True,
+        crs: int | str = 3067,
+) -> geopandas.GeoDataFrame:
+    """
+    Derive the initial number of cars based on the population density at night
+    (from 22 to 6) multiplied by the average number of cars per person.
+
+    Parameters
+    ----------
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
+    crs: int or str
+            the desired output CRS (default: 3067)
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            distribution of cars by night (used as baseline)
+    """
+    night_population = population_density_Lappeenranta(time_period=(22, 6),
+                                                       weekdays=weekdays, crs=crs)[0]
+    night_population['initial_nb_cars'] = night_population['total_visits'] * NB_CARS_PER_PERSON
+
+    return night_population[['initial_nb_cars', 'location_id', 'geometry']]
+
+
+# --------------------------------------------------------------------
+def average_number_cars(
+        df: pd.DataFrame,
+        *,
+        time_period: tuple[int, int] = (0, 24),
+        weekdays: bool = True,
+        crs: int | str = 3067,
+) -> geopandas.GeoDataFrame:
+    """
+    Estimate the average number of cars available during the time period.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+            Telia's data for the surroundings of Lappeenranta with
+            the associated geometry
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
+    crs: int or str
+            the desired output CRS (default: 3067)
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            distribution of cars
+    """
+    print("    Derive initial number of cars")
+    print("    **********")
+    number_cars = baseline_number_cars(weekdays=weekdays, crs=crs)
+    print("    **********")
+
+    if time_period[0] < time_period[1]:
+        hours = np.arange(time_period[0], time_period[1] + 1, 1)
+    else:
+        hours = np.concat((np.arange(time_period[0], 24 + 1, 1),
+                           np.arange(time_period[1] + 1)))
+    index_nights = np.where(np.isin(hours, NIGHT_HOURS))
+    hours_days = np.delete(hours, index_nights)
+
+    print("    Extract hourly variations since 6:00")
+    for hour in tqdm(range(6,max(hours_days)+1,1),leave=False):
+        sub_df = extract_time_period(df,time_period = (hour,hour),weekdays=weekdays)
+        for idx,row in number_cars.iterrows():
+            cell_id = number_cars.loc[idx,'location_id']
+            exiting_cars = sub_df[(sub_df['location_id_origin']==cell_id) &
+                                   (sub_df['mode_of_transport'] == 'Road')]['trip_count'].mean()
+            arriving_cars = sub_df[(sub_df['location_id_destination']==cell_id) &
+                                    (sub_df['mode_of_transport'] == 'Road')]['trip_count'].mean()
+            number_cars.loc[idx, f'variation_{hour}h'] = arriving_cars - exiting_cars
+
+    print("    Derive the hourly number of cars")
+    for hour in hours_days:
+        list_entries = [f'variation_{h}h' for h in range(6,hour,1)]
+        number_cars[f'nb_cars_{hour}h'] = number_cars['initial_nb_cars'] + number_cars[list_entries].sum(axis=1)
+
+    print("    Derive the average number of cars")
+    list_entries = [name for name in number_cars if 'nb_cars_' in name]
+    number_cars['total_nb_cars'] = number_cars[list_entries].mean(axis=1)
+
+    ENTRIES_CARS = ['initial_nb_cars'] + list_entries + ['total_nb_cars','geometry']
+
+    gdf = geopandas.GeoDataFrame(number_cars[ENTRIES_CARS], geometry=number_cars['geometry'])
+
+    return gdf
+
+
+# --------------------------------------------------------------------
+def average_number_car_old(
         gdf: geopandas.GeoDataFrame,
         weekdays: bool = True
 ) -> geopandas.GeoDataFrame:
     print("    Derive the average number of cars")
-    if (weekdays):
-        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[0]
+    if weekdays:
+        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS_PER_TRIPS / AVERAGE_CAR_OCCUPANCY[0]
     else:
-        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[1]
+        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS_PER_TRIPS / AVERAGE_CAR_OCCUPANCY[1]
 
     return gdf
 
@@ -173,7 +274,7 @@ def number_cars_Lappeenranta(
         *,
         weekdays: bool = True,
         crs: int | str = 3067,
-) -> tuple[geopandas.GeoDataFrame]:
+) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset and extract the data corresponding to
     the area surrounding Lappeenranta.
@@ -199,6 +300,9 @@ def number_cars_Lappeenranta(
     # print('  Derive population density')
     # population_density = average_population_density(sub_telia, time_period=(4, 6))
 
-    return sub_telia
+    print('  Derive number of cars')
+    number_cars = average_number_cars(sub_telia, time_period=time_period, weekdays=weekdays, crs=crs)
+
+    return number_cars
 
 # --------------------------------------------------------------------

@@ -7,7 +7,7 @@ from networkx.classes.multidigraph import MultiDiGraph
 
 from constants import *
 from geoanalysis_functions import read_shp, read_parquet
-from data_manipulation_functions import extract_season,extract_month
+from data_manipulation_functions import extract_season, extract_month
 
 ENTRIES_VISITS = ['visit_count', 'resident_visit_count', 'worker_visit_count',
                   'non_resident_non_worker_visit_count']
@@ -88,7 +88,7 @@ def read_capital_area(
         *,
         time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
-        season: str | None = 'spring',
+        season: str | None = None,
         weekdays: bool = True,
         crs: int | str = 3067,
         download_osm: bool = False
@@ -125,16 +125,18 @@ def read_capital_area(
 
     print("    Read Telia visit data")
     telia_df = read_parquet(TELIA_VISITS_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet")
-    telia_df = telia_df.rename(columns = {"observation_start_date": "observation_start_datetime"})
-    telia_df = telia_df.rename(columns = {"observation_end_date": "observation_end_datetime"})
+    telia_df = telia_df.rename(columns={"observation_start_date": "observation_start_datetime"})
+    telia_df = telia_df.rename(columns={"observation_end_date": "observation_end_datetime"})
 
     print("    Extract the time period")
     if month is not None:
         month_df = extract_month(telia_df, month)
         sub_df = extract_time_period(month_df, time_period, weekdays)
-    else:
+    elif season is not None:
         season_df = extract_season(telia_df, season)
         sub_df = extract_time_period(season_df, time_period, weekdays)
+    else:
+        sub_df = telia_df.copy()
 
     print("    Extract the sub area")
     sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
@@ -157,7 +159,7 @@ def read_Lappeenranta(
         *,
         time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
-        season: str | None = 'spring',
+        season: str | None = None,
         weekdays: bool = True,
         crs: int | str = 3067,
         download_osm: bool = False
@@ -194,16 +196,18 @@ def read_Lappeenranta(
 
     print("    Read Telia visit data")
     telia_df = read_parquet(TELIA_VISITS_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet")
-    telia_df = telia_df.rename(columns = {"observation_start_date": "observation_start_datetime"})
-    telia_df = telia_df.rename(columns = {"observation_end_date": "observation_end_datetime"})
+    telia_df = telia_df.rename(columns={"observation_start_date": "observation_start_datetime"})
+    telia_df = telia_df.rename(columns={"observation_end_date": "observation_end_datetime"})
 
     print("    Extract the time period")
     if month is not None:
         month_df = extract_month(telia_df, month)
         sub_df = extract_time_period(month_df, time_period, weekdays)
-    else:
+    elif season is not None:
         season_df = extract_season(telia_df, season)
         sub_df = extract_time_period(season_df, time_period, weekdays)
+    else:
+        sub_df = telia_df.copy()
 
     print("    Extract the sub area")
     sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
@@ -242,12 +246,15 @@ def average_population_density(
     geopandas.GeoDataFrame
             subset of Telia data
     """
-    duration = time_period[1] - time_period[0]
+    if time_period[0] < time_period[1]:
+        duration = time_period[1] - time_period[0]
+    else:
+        duration = (24-time_period[0]) + time_period[1]
 
     print('    Derive the population density')
-    visits = gdf[ENTRIES_VISITS + ['geometry']]
+    visits = gdf[ENTRIES_VISITS + ['location_id','geometry']]
     visits['total_visits'] = visits[ENTRIES_VISITS].sum(axis=1)
-    avg_visits = visits.groupby('geometry').mean().reset_index()
+    avg_visits = visits.groupby(['location_id','geometry']).mean().reset_index()
     for entry in ENTRIES_VISITS + ['total_visits']:
         avg_visits[entry] = avg_visits[entry] / duration
 
@@ -262,6 +269,9 @@ def average_population_density(
 # --------------------------------------------------------------------
 def population_density_Lappeenranta(
         *,
+        time_period: tuple[int, int] = (4, 6),
+        month: int | None = None,
+        season: str | None = None,
         weekdays: bool = True,
         crs: int | str = 3067,
         download_osm: bool = False
@@ -272,6 +282,12 @@ def population_density_Lappeenranta(
 
     Parameters
     ----------
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    month: int
+            month of interest
+    season: str
+            season of interest
     weekdays: bool
             specify whether to extract the weekdays or the weekend
     crs: int or str
@@ -288,11 +304,11 @@ def population_density_Lappeenranta(
             OpenStreetMap graph for the area covered by the return Telia data
     """
     print('  Read data')
-    sub_telia, osm_graph = read_Lappeenranta(time_period=(4, 6), season="spring", weekdays=weekdays, crs=crs,
-                                             download_osm=download_osm)
+    sub_telia, osm_graph = read_Lappeenranta(time_period=time_period, month=month, season=season, weekdays=weekdays,
+                                             crs=crs, download_osm=download_osm)
 
     print('  Derive population density')
-    population_density = average_population_density(sub_telia, time_period=(4, 6))
+    population_density = average_population_density(sub_telia, time_period=time_period)
 
     return population_density, osm_graph
 

@@ -1,5 +1,14 @@
 import pandas as pd
 
+
+SEASON_TO_MONTHS = {
+    'spring': [3, 4, 5],
+    'summer': [6, 7, 8],
+    'fall': [9, 10, 11],
+    'autumn': [9, 10, 11],
+    'winter': [12, 1, 2]
+}
+
 # --------------------------------------------------------------------
 def extract_season(
         df: pd.DataFrame,
@@ -23,14 +32,7 @@ def extract_season(
     """
     month = df['observation_start_datetime'].dt.month
 
-    if season == 'spring':
-        return df[month.isin([3, 4, 5])]
-    elif season == 'summer':
-        return df[month.isin([6, 7, 8])]
-    elif season in ['fall', 'autumn']:
-        return df[month.isin([9, 10, 11])]
-    elif season == 'winter':
-        return df[month.isin([12, 1, 2])]
+    return df[month.isin(SEASON_TO_MONTHS[season])]
 
 
 # --------------------------------------------------------------------

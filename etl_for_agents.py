@@ -68,7 +68,9 @@ def export_data(
 # --------------------------------------------------------------------
 
 print('Population density')
-population_density, osm_graph = population_density_Lappeenranta(weekdays=WEEKDAYS, crs=CRS, download_osm=DOWNLOAD_OSM)
+population_density, osm_graph = population_density_Lappeenranta(
+    time_period=(4, 6), month=None, season='spring',
+    weekdays=WEEKDAYS, crs=CRS, download_osm=DOWNLOAD_OSM)
 print('Distribution of cars')
 number_cars = number_cars_Lappeenranta(weekdays=WEEKDAYS, crs=CRS)
 population_density = merge_datasets(population_density, number_cars, weekdays=WEEKDAYS)

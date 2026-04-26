@@ -92,11 +92,11 @@ def export_population_density(
         mode += output_lists[2]
         n_people += output_lists[3]
 
-    dict = {'X': X,
-            'Y': Y,
-            'mode': mode,
-            'n_people': n_people}
-    out_gdf = pd.DataFrame(dict)
+    out_dict = {'X': X,
+                'Y': Y,
+                'mode': mode,
+                'n_people': n_people}
+    out_gdf = pd.DataFrame(out_dict)
 
     out_gdf.to_csv(outfile)
 
