@@ -252,9 +252,9 @@ def average_population_density(
         duration = (24-time_period[0]) + time_period[1]
 
     print('    Derive the population density')
-    visits = gdf[ENTRIES_VISITS + ['geometry']]
+    visits = gdf[ENTRIES_VISITS + ['location_id','geometry']]
     visits['total_visits'] = visits[ENTRIES_VISITS].sum(axis=1)
-    avg_visits = visits.groupby('geometry').mean().reset_index()
+    avg_visits = visits.groupby(['location_id','geometry']).mean().reset_index()
     for entry in ENTRIES_VISITS + ['total_visits']:
         avg_visits[entry] = avg_visits[entry] / duration
 
