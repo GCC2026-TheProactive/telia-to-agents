@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from constants import *
 from data_manipulation_functions import extract_season, extract_month
+from etl_population_density import population_density_Lappeenranta
 from geoanalysis_functions import read_shp, read_parquet
 
 
@@ -168,6 +169,35 @@ def average_number_bikes(
     gdf['nb_bikes'] = gdf['total_visits'] * FRACTION_BIKES
 
     return gdf
+
+
+# --------------------------------------------------------------------
+def baseline_number_cars(
+        *,
+        weekdays: bool = True,
+        crs: int | str = 3067,
+) -> geopandas.GeoDataFrame:
+    """
+    Derive the initial number of cars based on the population density at night
+    (from 22 to 6) multiplied by the average number of cars per person.
+
+    Parameters
+    ----------
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
+    crs: int or str
+            the desired output CRS (default: 3067)
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            distribution of cars by night (used as baseline)
+    """
+    night_population = population_density_Lappeenranta(time_period=(22, 6),
+                                                       weekdays=weekdays, crs=crs)[0]
+    night_population['initial_nb_cars'] = gdf['total_visits'] * NB_CARS_PER_PERSON
+
+    return night_population[['initial_nb_cars','geometry']]
 
 
 # --------------------------------------------------------------------
