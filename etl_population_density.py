@@ -177,7 +177,7 @@ def read_capital_area(*,
         month_df = extract_month(telia_df, month)
         sub_df = extract_time_period(month_df, time_period, weekdays)
     else:
-        season_df = extract_season(telia_gf, season)
+        season_df = extract_season(telia_df, season)
         sub_df = extract_time_period(season_df, time_period, weekdays)
 
     print("    Extract the sub area")
