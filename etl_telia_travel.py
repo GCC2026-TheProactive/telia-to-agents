@@ -1,6 +1,7 @@
 import pathlib
 
 import geopandas
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
@@ -197,7 +198,7 @@ def baseline_number_cars(
                                                        weekdays=weekdays, crs=crs)[0]
     night_population['initial_nb_cars'] = night_population['total_visits'] * NB_CARS_PER_PERSON
 
-    return night_population[['initial_nb_cars', 'geometry']]
+    return night_population[['initial_nb_cars', 'location_id', 'geometry']]
 
 
 # --------------------------------------------------------------------
