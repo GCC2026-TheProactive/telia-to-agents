@@ -251,9 +251,6 @@ def number_cars_Lappeenranta(
     print('  Read data')
     sub_telia = read_Lappeenranta(month=month, season=season, crs=crs)
 
-    # print("    Add average distance (straight line)")
-    # telia_with_distance = add_centroid2centroid_distance(sub_telia, TELIA_DATA_DIRECTORY, crs)
-
     print('  Derive number of cars')
     number_cars = average_number_cars(sub_telia, population_night=population_night, time_period=time_period)
 
