@@ -262,6 +262,9 @@ def average_population_density(
 # --------------------------------------------------------------------
 def population_density_Lappeenranta(
         *,
+        time_period: tuple[int, int] = (4, 6),
+        month: int | None = None,
+        season: str | None = None,
         weekdays: bool = True,
         crs: int | str = 3067,
         download_osm: bool = False
@@ -272,6 +275,12 @@ def population_density_Lappeenranta(
 
     Parameters
     ----------
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    month: int
+            month of interest
+    season: str
+            season of interest
     weekdays: bool
             specify whether to extract the weekdays or the weekend
     crs: int or str
@@ -288,11 +297,11 @@ def population_density_Lappeenranta(
             OpenStreetMap graph for the area covered by the return Telia data
     """
     print('  Read data')
-    sub_telia, osm_graph = read_Lappeenranta(time_period=(4, 6), season="spring", weekdays=weekdays, crs=crs,
-                                             download_osm=download_osm)
+    sub_telia, osm_graph = read_Lappeenranta(time_period=time_period, month=month, season=season, weekdays=weekdays,
+                                             crs=crs, download_osm=download_osm)
 
     print('  Derive population density')
-    population_density = average_population_density(sub_telia, time_period=(4, 6))
+    population_density = average_population_density(sub_telia, time_period=time_period)
 
     return population_density, osm_graph
 
