@@ -207,18 +207,24 @@ def read_Lappeenranta(*,
 
 
 # --------------------------------------------------------------------
-def average_number_car_bikes(
+def average_number_car(
         gdf: geopandas.GeoDataFrame,
-        *,
-        time_period: tuple[int, int] = (0, 24),
-        month: int | None = None,
-        season: str | None = 'spring',
         weekdays: bool = True
 ) -> geopandas.GeoDataFrame:
+    print("    Derive the average number of cars")
     if (weekdays):
         gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[0]
     else:
         gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[1]
+
+    return gdf
+
+
+# --------------------------------------------------------------------
+def average_number_bikes(
+        gdf: geopandas.GeoDataFrame,
+) -> geopandas.GeoDataFrame:
+    print("    Derive the average number of bikes")
     gdf['nb_bikes'] = gdf['total_visits'] * FRACTION_BIKES
 
     return gdf

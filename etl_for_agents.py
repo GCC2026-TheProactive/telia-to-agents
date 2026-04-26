@@ -5,7 +5,7 @@ import osmnx
 from networkx.classes.multidigraph import MultiDiGraph
 
 from etl_population_density import population_density_Lappeenranta
-from etl_telia_travel import average_number_car_bikes
+from etl_telia_travel import average_number_car, average_number_bikes
 from export_functions import export_population_density
 
 # Paths definition
@@ -38,10 +38,10 @@ def merge_datasets(
         weekdays: bool = True
 ) -> geopandas.GeoDataFrame:
     print("Combine the population density and number of cars")
-    # gdf['nb_bikes'] = gdf['total_visits'] * FRACTION_BIKES
-    new_gdf = average_number_car_bikes(visits, weekdays=weekdays)
+    visits_with_cars = average_number_car(visits, weekdays=weekdays)
+    out_visits = average_number_bikes(visits_with_cars)
 
-    return new_gdf
+    return out_visits
 
 
 # --------------------------------------------------------------------
