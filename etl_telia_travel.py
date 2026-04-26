@@ -149,30 +149,6 @@ def read_Lappeenranta(
 
 
 # --------------------------------------------------------------------
-def average_number_car(
-        gdf: geopandas.GeoDataFrame,
-        weekdays: bool = True
-) -> geopandas.GeoDataFrame:
-    print("    Derive the average number of cars")
-    if weekdays:
-        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS_PER_TRIPS / AVERAGE_CAR_OCCUPANCY[0]
-    else:
-        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_BIKES_PER_TRIPS / AVERAGE_CAR_OCCUPANCY[1]
-
-    return gdf
-
-
-# --------------------------------------------------------------------
-def average_number_bikes(
-        gdf: geopandas.GeoDataFrame,
-) -> geopandas.GeoDataFrame:
-    print("    Derive the average number of bikes")
-    gdf['nb_bikes'] = gdf['total_visits'] * FRACTION_BIKES
-
-    return gdf
-
-
-# --------------------------------------------------------------------
 def baseline_number_cars(
         *,
         weekdays: bool = True,
@@ -199,6 +175,98 @@ def baseline_number_cars(
     night_population['initial_nb_cars'] = night_population['total_visits'] * NB_CARS_PER_PERSON
 
     return night_population[['initial_nb_cars', 'location_id', 'geometry']]
+
+
+# --------------------------------------------------------------------
+def average_number_cars(
+        df: pd.DataFrame,
+        *,
+        time_period: tuple[int, int] = (0, 24),
+        weekdays: bool = True,
+        crs: int | str = 3067,
+) -> geopandas.GeoDataFrame:
+    """
+    Estimate the average number of cars available during the time period.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+            Telia's data for the surroundings of Lappeenranta with
+            the associated geometry
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
+    crs: int or str
+            the desired output CRS (default: 3067)
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            distribution of cars
+    """
+    print("    Derive initial number of cars")
+    print("    **********")
+    number_cars = baseline_number_cars(weekdays=weekdays, crs=crs)
+    print("    **********")
+
+    if time_period[0] < time_period[1]:
+        hours = np.arange(time_period[0], time_period[1] + 1, 1)
+    else:
+        hours = np.concat((np.arange(time_period[0], 24 + 1, 1),
+                           np.arange(time_period[1] + 1)))
+    index_nights = np.where(np.isin(hours, NIGHT_HOURS))
+    hours_days = np.delete(hours, index_nights)
+
+    print("    Extract hourly variations since 6:00")
+    for hour in tqdm(range(6,max(hours_days)+1,1),leave=False):
+        sub_df = extract_time_period(df,time_period = (hour,hour),weekdays=weekdays)
+        for idx,row in number_cars.iterrows():
+            cell_id = number_cars.loc[idx,'location_id']
+            exiting_cars = sub_df[(sub_df['location_id_origin']==cell_id) &
+                                   (sub_df['mode_of_transport'] == 'Road')]['trip_count'].mean()
+            arriving_cars = sub_df[(sub_df['location_id_destination']==cell_id) &
+                                    (sub_df['mode_of_transport'] == 'Road')]['trip_count'].mean()
+            number_cars.loc[idx, f'variation_{hour}h'] = arriving_cars - exiting_cars
+
+    print("    Derive the hourly number of cars")
+    for hour in hours_days:
+        list_entries = [f'variation_{h}h' for h in range(6,hour,1)]
+        number_cars[f'nb_cars_{hour}h'] = number_cars['initial_nb_cars'] + number_cars[list_entries].sum(axis=1)
+
+    print("    Derive the average number of cars")
+    list_entries = [name for name in number_cars if 'nb_cars_' in name]
+    number_cars['total_nb_cars'] = number_cars[list_entries].mean(axis=1)
+
+    ENTRIES_CARS = ['initial_nb_cars'] + list_entries + ['total_nb_cars','geometry']
+
+    gdf = geopandas.GeoDataFrame(number_cars[ENTRIES_CARS], geometry=number_cars['geometry'])
+
+    return gdf
+
+
+# --------------------------------------------------------------------
+def average_number_car_old(
+        gdf: geopandas.GeoDataFrame,
+        weekdays: bool = True
+) -> geopandas.GeoDataFrame:
+    print("    Derive the average number of cars")
+    if weekdays:
+        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS_PER_TRIPS / AVERAGE_CAR_OCCUPANCY[0]
+    else:
+        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_BIKES_PER_TRIPS / AVERAGE_CAR_OCCUPANCY[1]
+
+    return gdf
+
+
+# --------------------------------------------------------------------
+def average_number_bikes(
+        gdf: geopandas.GeoDataFrame,
+) -> geopandas.GeoDataFrame:
+    print("    Derive the average number of bikes")
+    gdf['nb_bikes'] = gdf['total_visits'] * FRACTION_BIKES
+
+    return gdf
 
 
 # --------------------------------------------------------------------
@@ -232,6 +300,9 @@ def number_cars_Lappeenranta(
     # print('  Derive population density')
     # population_density = average_population_density(sub_telia, time_period=(4, 6))
 
-    return sub_telia
+    print('  Derive number of cars')
+    number_cars = average_number_cars(sub_telia, time_period=time_period, weekdays=weekdays, crs=crs)
+
+    return number_cars
 
 # --------------------------------------------------------------------

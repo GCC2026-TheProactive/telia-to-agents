@@ -19,6 +19,7 @@ NB_CARS_PER_PERSON = 68412 / 114100
 FRACTION_CARS_PER_TRIPS = 0.59
 FRACTION_BIKES_PER_TRIPS = 0.16
 AVERAGE_CAR_OCCUPANCY = [1.3, 1.7]
+NIGHT_HOURS = [22,23,24,0,1,2,3,4,5]
 
 CAPITAL_AREA = ['Helsinki', 'Espoo', 'Vantaa', 'Kauniainen']
 LAPPEENRANTA = ['Lappeenranta', 'Imatra', 'Lemi', 'Luumäki', 'Miehikkälä', 'Savitaipale', 'Taipalsaari']
