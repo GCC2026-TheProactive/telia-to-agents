@@ -6,7 +6,7 @@ from networkx.classes.multidigraph import MultiDiGraph
 
 from constants import *
 from etl_population_density import population_density_Lappeenranta
-from etl_telia_travel import average_number_car, average_number_bikes
+from etl_telia_travel import average_number_car, average_number_bikes, number_cars_Lappeenranta
 from export_functions import export_population_density
 
 ENTRIES_VISITS = ['visit_count', 'resident_visit_count', 'worker_visit_count',
@@ -69,7 +69,9 @@ def export_data(
 
 print('Population density')
 population_density, osm_graph = population_density_Lappeenranta(weekdays=WEEKDAYS, crs=CRS, download_osm=DOWNLOAD_OSM)
-population_density = merge_datasets(population_density, weekdays=WEEKDAYS)
+print('Distribution of cars')
+number_cars = number_cars_Lappeenranta(weekdays=WEEKDAYS, crs=CRS)
+population_density = merge_datasets(population_density, number_cars, weekdays=WEEKDAYS)
 
 print('Export data')
 export_data(population_density, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_population_density.csv",

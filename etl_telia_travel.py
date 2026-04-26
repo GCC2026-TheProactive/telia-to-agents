@@ -5,8 +5,8 @@ import pandas as pd
 from tqdm import tqdm
 
 from constants import *
+from data_manipulation_functions import extract_season, extract_month
 from geoanalysis_functions import read_shp, read_parquet
-from data_manipulation_functions import extract_season,extract_month
 
 
 # --------------------------------------------------------------------
@@ -169,6 +169,36 @@ def average_number_bikes(
 
 
 # --------------------------------------------------------------------
+def number_cars_Lappeenranta(
+        *,
+        weekdays: bool = True,
+        crs: int | str = 3067,
+) -> tuple[geopandas.GeoDataFrame]:
+    """
+    Read the Telia's dataset and extract the data corresponding to
+    the area surrounding Lappeenranta.
 
-print('Read data')
-sub_telia = read_Lappeenranta(time_period=(4, 6), season="spring", weekdays=WEEKDAYS, crs=CRS)
+    Parameters
+    ----------
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
+    crs: int or str
+            the desired output CRS (default: 3067)
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            Telia's data for the surroundings of Lappeenranta with
+            the associated geometry
+    MultiDiGraph
+            OpenStreetMap graph for the area covered by the return Telia data
+    """
+    print('Read data')
+    sub_telia = read_Lappeenranta(time_period=(4, 6), season="spring", weekdays=weekdays, crs=crs)
+
+    # print('  Derive population density')
+    # population_density = average_population_density(sub_telia, time_period=(4, 6))
+
+    return sub_telia
+
+# --------------------------------------------------------------------
