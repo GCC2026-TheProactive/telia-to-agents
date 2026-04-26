@@ -254,7 +254,7 @@ def average_number_car_old(
     if weekdays:
         gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS_PER_TRIPS / AVERAGE_CAR_OCCUPANCY[0]
     else:
-        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_BIKES_PER_TRIPS / AVERAGE_CAR_OCCUPANCY[1]
+        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS_PER_TRIPS / AVERAGE_CAR_OCCUPANCY[1]
 
     return gdf
 
