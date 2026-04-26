@@ -88,7 +88,7 @@ def read_capital_area(
         *,
         time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
-        season: str | None = 'spring',
+        season: str | None = None,
         weekdays: bool = True,
         crs: int | str = 3067,
         download_osm: bool = False
@@ -132,9 +132,11 @@ def read_capital_area(
     if month is not None:
         month_df = extract_month(telia_df, month)
         sub_df = extract_time_period(month_df, time_period, weekdays)
-    else:
+    elif season is not None:
         season_df = extract_season(telia_df, season)
         sub_df = extract_time_period(season_df, time_period, weekdays)
+    else:
+        sub_df = telia_df.copy()
 
     print("    Extract the sub area")
     sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
@@ -157,7 +159,7 @@ def read_Lappeenranta(
         *,
         time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
-        season: str | None = 'spring',
+        season: str | None = None,
         weekdays: bool = True,
         crs: int | str = 3067,
         download_osm: bool = False
@@ -201,9 +203,11 @@ def read_Lappeenranta(
     if month is not None:
         month_df = extract_month(telia_df, month)
         sub_df = extract_time_period(month_df, time_period, weekdays)
-    else:
+    elif season is not None:
         season_df = extract_season(telia_df, season)
         sub_df = extract_time_period(season_df, time_period, weekdays)
+    else:
+        sub_df = telia_df.copy()
 
     print("    Extract the sub area")
     sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
