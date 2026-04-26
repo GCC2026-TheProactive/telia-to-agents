@@ -190,7 +190,7 @@ def average_number_cars(
     list_entries = [name for name in number_cars if 'nb_cars_' in name]
     number_cars['total_nb_cars'] = number_cars[list_entries].mean(axis=1)
 
-    ENTRIES_CARS = ['initial_nb_cars'] + list_entries + ['total_nb_cars', 'geometry']
+    ENTRIES_CARS = ['location_id', 'initial_nb_cars'] + list_entries + ['total_nb_cars', 'geometry']
 
     gdf = geopandas.GeoDataFrame(number_cars[ENTRIES_CARS], geometry=number_cars['geometry'])
 

@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import poisson
 
-COLNAMES_CONVERSION = {'total_visits': 'nb_persons'}
-OUTPUT_COLUMNS = ['lon_centre', 'lat_centre', 'nb_persons', 'geometry']
+COLNAMES_CONVERSION = {'total_visits': 'nb_persons',
+                       'total_nb_cars': 'nb_cars'}
 
 CAR_PASSENGERS_OPTIONS = [0, 1, 2, 3]
 AVERAGE_CAR_OCCUPANCY = [1.3, 1.7]  # https://www.traficom.fi/files/media/file/HLT2021_Fact%20sheet_Eurostat.pdf
@@ -34,7 +34,7 @@ def export_cell(
     else:
         mu_cars = AVERAGE_CAR_OCCUPANCY[1] - 1
     X, Y, mode, n_people = [], [], [], []
-    nb_persons = int(row['total_visits'])
+    nb_persons = int(row['nb_persons'])
     nb_cars = int(row['nb_cars'])
     nb_bikes = int(row['nb_bikes'])
     geom = row['geometry']
@@ -84,8 +84,10 @@ def export_population_density(
 ) -> None:
     assert gdf.crs.srs == f'EPSG:{crs}', f'Expected crs EPSG:{crs}'
 
+    new_gdf = gdf.rename(columns=COLNAMES_CONVERSION)
+
     X, Y, mode, n_people = [], [], [], []
-    for idx, row in gdf.iterrows():
+    for idx, row in new_gdf.iterrows():
         output_lists = export_cell(row, weekdays)
         X += output_lists[0]
         Y += output_lists[1]
