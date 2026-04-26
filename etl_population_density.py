@@ -1,13 +1,11 @@
 import pathlib
 
-import duckdb
 import geopandas
 import osmnx
 import pandas as pd
 from networkx.classes.multidigraph import MultiDiGraph
 
-from export_functions import export_population_density
-from geoanalysis_functions import read_shp
+from geoanalysis_functions import read_shp, read_parquet
 
 # Paths definition
 NOTEBOOK_PATH = pathlib.Path().resolve()
@@ -15,10 +13,9 @@ DATA_DIRECTORY = NOTEBOOK_PATH / "data"
 TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_hourly_visits"
 OUTPUT_DIRECTORY = DATA_DIRECTORY / "output"
 
+CRS = 25835
 DOWNLOAD_OSM = False
 WEEKDAYS = True
-
-CRS = 25835
 
 MUNICIPALITIES_DATA = DATA_DIRECTORY / "finland_municipalities_2021.gpkg"
 POPULATION_CENSUS_2021_AT_100m = (DATA_DIRECTORY / "JRC-ESTAT_Census_Population_2021_100m" /
@@ -63,9 +60,8 @@ def add_geometry(
 
 # --------------------------------------------------------------------
 def read_parquet(
-        filename: str | pathlib.PosixPath | pathlib.Path,
-        crs: int | str = 3067
-) -> geopandas.GeoDataFrame:
+        filename: str | pathlib.PosixPath | pathlib.Path
+) -> pd.DataFrame:
     """
     Read the Telia's dataset, add the geometry of the grid and return
     the data into a GeoDataFrame.
@@ -79,7 +75,7 @@ def read_parquet(
 
     Returns
     -------
-    geopandas.GeoDataFrame
+    pd.DataFrame
             Telia's data with the associated geometry
     """
     filename = pathlib.Path(filename)
@@ -89,20 +85,20 @@ def read_parquet(
                            '{filename}'
                      """).df()
 
-    return add_geometry(df, TELIA_DATA_DIRECTORY, crs)
+    return df
 
 
 # --------------------------------------------------------------------
 def extract_season(
-        gdf: geopandas.GeoDataFrame,
+        df: pd.DataFrame,
         season: str = 'spring'
-) -> geopandas.GeoDataFrame:
+) -> pd.DataFrame:
     """
     Extract the Telia's data corresponding to the given season.
 
     Parameters
     ----------
-    gdf: geopandas.GeoDataFrame
+    df: pd.DataFrame
             Telia's data for the region of interest with
             the associated geometry
     season: str
@@ -110,32 +106,32 @@ def extract_season(
 
     Returns
     -------
-    geopandas.GeoDataFrame
+    pd.DataFrame
             Telia's data for the season of interest
     """
-    month = gdf['observation_start_date'].dt.month
+    month = df['observation_start_date'].dt.month
 
     if season == 'spring':
-        return gdf[month.isin([3, 4, 5])]
+        return df[month.isin([3, 4, 5])]
     elif season == 'summer':
-        return gdf[month.isin([6, 7, 8])]
+        return df[month.isin([6, 7, 8])]
     elif season in ['fall', 'autumn']:
-        return gdf[month.isin([9, 10, 11])]
+        return df[month.isin([9, 10, 11])]
     elif season == 'winter':
-        return gdf[month.isin([12, 1, 2])]
+        return df[month.isin([12, 1, 2])]
 
 
 # --------------------------------------------------------------------
 def extract_month(
-        gdf: geopandas.GeoDataFrame,
+        df: pd.DataFrame,
         month: int
-) -> geopandas.GeoDataFrame:
+) -> pd.DataFrame:
     """
     Extract the Telia's data corresponding to a given month.
 
     Parameters
     ----------
-    gdf: geopandas.GeoDataFrame
+    df: pd.DataFrame
             Telia's data for the region of interest with
             the associated geometry
     month: int
@@ -143,26 +139,26 @@ def extract_month(
 
     Returns
     -------
-    geopandas.GeoDataFrame
+    pd.DataFrame
             Telia's data for the month of interest
     """
 
-    return gdf[gdf['observation_start_date'].dt.month == month]
+    return df[df['observation_start_date'].dt.month == month]
 
 
 # --------------------------------------------------------------------
 def extract_time_period(
-        gdf: geopandas.GeoDataFrame,
+        df: pd.DataFrame,
         time_period: tuple[int, int] = (0, 24),
         weekdays: bool = True,
-) -> geopandas.GeoDataFrame:
+) -> pd.DataFrame:
     """
     Extract the time period during the day and the week from
     the Telia data.
 
     Parameters
     ----------
-    gdf: geopandas.GeoDataFrame
+    df: pd.DataFrame
             Telia's data for the region of interest with
             the associated geometry
     time_period: tuple of int
@@ -175,14 +171,14 @@ def extract_time_period(
     geopandas.GeoDataFrame
             Telia's data for the time period of interest
     """
-    hour = gdf['observation_start_date'].dt.hour
+    hour = df['observation_start_date'].dt.hour
 
     if time_period[0] < time_period[1]:
-        sub_gdf = gdf[(time_period[0] <= hour) & (hour < time_period[1])]
+        sub_gdf = df[(time_period[0] <= hour) & (hour < time_period[1])]
     elif time_period[0] > time_period[1]:
-        sub_gdf = gdf[(time_period[1] <= hour) | (hour < time_period[0])]
+        sub_gdf = df[(time_period[1] <= hour) | (hour < time_period[0])]
     elif time_period[0] == time_period[1]:
-        sub_gdf = gdf[(hour == time_period[0])]
+        sub_gdf = df[(hour == time_period[0])]
 
     if weekdays:
         return sub_gdf[sub_gdf['observation_start_date'].dt.weekday <= 4]
@@ -220,18 +216,19 @@ def read_capital_area(*,
     sub_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
 
     print("    Read Telia visit data")
-    telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet", crs=crs)
+    telia_df = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet")
 
     print("    Extract the time period")
     if month is not None:
-        month_gdf = extract_month(telia_gdf, month)
-        sub_df = extract_time_period(month_gdf, time_period, weekdays)
+        month_df = extract_month(telia_df, month)
+        sub_df = extract_time_period(month_df, time_period, weekdays)
     else:
-        season_gdf = extract_season(telia_gdf, season)
-        sub_df = extract_time_period(season_gdf, time_period, weekdays)
+        season_df = extract_season(telia_gf, season)
+        sub_df = extract_time_period(season_df, time_period, weekdays)
 
     print("    Extract the sub area")
-    sub_telia = geopandas.sjoin(sub_df, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
+    sub_gdf = add_geometry(sub_df, TELIA_DATA_DIRECTORY, crs)
+    sub_telia = geopandas.sjoin(sub_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
 
     if download_osm:
         print("    Download OSM data")
@@ -275,18 +272,19 @@ def read_Lappeenranta(*,
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
 
     print("    Read Telia visit data")
-    telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet", crs=crs)
+    telia_df = read_parquet(TELIA_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet")
 
     print("    Extract the time period")
     if month is not None:
-        month_gdf = extract_month(telia_gdf, month)
-        sub_df = extract_time_period(month_gdf, time_period, weekdays)
+        month_df = extract_month(telia_df, month)
+        sub_df = extract_time_period(month_df, time_period, weekdays)
     else:
-        season_gdf = extract_season(telia_gdf, season)
-        sub_df = extract_time_period(season_gdf, time_period, weekdays)
+        season_df = extract_season(telia_df, season)
+        sub_df = extract_time_period(season_df, time_period, weekdays)
 
     print("    Extract the sub area")
-    sub_telia = geopandas.sjoin(sub_df, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
+    sub_gdf = add_geometry(sub_df, TELIA_DATA_DIRECTORY, crs)
+    sub_telia = geopandas.sjoin(sub_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
 
     if download_osm:
         print("    Download OSM data")
@@ -355,3 +353,5 @@ def population_density_Lappeenranta():
     population_density = average_population_density(sub_telia, time_period=(4, 6))
 
     return population_density, osm_graph
+
+# --------------------------------------------------------------------
