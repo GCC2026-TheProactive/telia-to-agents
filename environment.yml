@@ -26,6 +26,7 @@ dependencies:
   # Data access
   - pathlib
   - pandasql
+  - duckdb
 
   # Plotting
   - contextily
