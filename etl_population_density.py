@@ -155,8 +155,18 @@ def read_capital_area(*,
 
     Parameters
     ----------
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    month: int
+            month of interest
+    season: str
+            season of interest
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
     crs: int or str
             the desired output CRS (default: 3067)
+    download_osm: bool
+            specify whether to download the OSM data (default: False)
 
     Returns
     -------
@@ -211,8 +221,18 @@ def read_Lappeenranta(*,
 
     Parameters
     ----------
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    month: int
+            month of interest
+    season: str
+            season of interest
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
     crs: int or str
             the desired output CRS (default: 3067)
+    download_osm: bool
+            specify whether to download the OSM data (default: False)
 
     Returns
     -------
@@ -268,12 +288,6 @@ def average_population_density(
             the associated geometry
     time_period: tuple of int
             starting hour and ending hour to extract
-    month: int
-            month of interest
-    season: str
-            season of interest
-    weekdays: bool
-            specify whether to extract the weekdays or the weekend
 
     Returns
     -------
