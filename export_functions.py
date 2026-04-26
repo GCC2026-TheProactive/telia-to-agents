@@ -1,26 +1,76 @@
 import pathlib
 
 import geopandas
+import numpy as np
 import pandas as pd
+from scipy.stats import poisson
 
 COLNAMES_CONVERSION = {'total_visits': 'nb_persons'}
 OUTPUT_COLUMNS = ['lon_centre', 'lat_centre', 'nb_persons', 'geometry']
 
-AVERAGE_CAR_OCCUPANCY = [1.3,1.7]  # https://www.traficom.fi/files/media/file/HLT2021_Fact%20sheet_Eurostat.pdf
+CAR_PASSENGERS_OPTIONS = [0, 1, 2, 3]
+AVERAGE_CAR_OCCUPANCY = [1.3, 1.7]  # https://www.traficom.fi/files/media/file/HLT2021_Fact%20sheet_Eurostat.pdf
+MU_CAR_OCCUPANCY = [0.56, 1.26]
 
-def export_cell(row: pd.Series) -> tuple[list[float], list[float], list[str], list[int]]:
+
+def truncated_Poisson(list_x, mu, xmin=-1, xmax=1e3):
+    Poisson_cars = poisson(mu)
+    probas = np.zeros(len(list_x))
+    i = 0
+    for x in list_x:
+        if (xmin < x) and (x <= xmax):
+            probas[i] = Poisson_cars.pmf(x) / (Poisson_cars.cdf(xmax) - Poisson_cars.cdf(xmin))
+        i += 1
+
+    return probas
+
+
+def export_cell(
+        row: pd.Series,
+        weekdays: bool = True
+) -> tuple[list[float], list[float], list[str], list[int]]:
+    if weekdays:
+        mu_cars = AVERAGE_CAR_OCCUPANCY[0] - 1
+    else:
+        mu_cars = AVERAGE_CAR_OCCUPANCY[1] - 1
     X, Y, mode, n_people = [], [], [], []
     nb_persons = int(row['total_visits'])
+    nb_cars = int(row['nb_cars'])
+    nb_bikes = int(row['nb_bikes'])
     geom = row['geometry']
     multi_positions = geopandas.GeoSeries([geom]).sample_points(nb_persons)[0]
     positions = [point for point in multi_positions.geoms]
 
-    for point in positions:
-        X.append(point.x)
-        Y.append(point.y)
-        mode.append('walk')
-        n_people.append(1)
+    nb_agents = 0
+    for idx, point in zip(range(len(positions)), positions):
+        if nb_agents < nb_persons:
+            X.append(point.x)
+            Y.append(point.y)
+        if (idx < nb_cars) & (nb_agents < nb_persons):
+            nb_in_car = 1 + np.random.choice(CAR_PASSENGERS_OPTIONS,
+                                             p=truncated_Poisson(CAR_PASSENGERS_OPTIONS, mu_cars,
+                                                                 xmax=max(CAR_PASSENGERS_OPTIONS)))
+            mode.append('car')
+            if nb_in_car <= nb_persons - nb_agents:
+                n_people.append(nb_in_car)
+                nb_agents += nb_in_car
+            else:
+                n_people.append(nb_persons - nb_agents)
+                nb_agents += nb_persons - nb_agents
+        elif (idx - nb_cars < nb_bikes) & (nb_agents < nb_persons):
+            mode.append('bike')
+            n_people.append(1)
+            nb_agents += 1
+        elif nb_agents < nb_persons:
+            mode.append('walk')
+            n_people.append(1)
+            nb_agents += 1
+        else:
+            break
 
+    if sum(n_people) != nb_persons:
+        print(nb_persons, nb_cars, nb_bikes, sum(n_people), nb_persons)
+        print(n_people)
     assert sum(n_people) == nb_persons, 'Wrong output number of people'
 
     return X, Y, mode, n_people
@@ -29,13 +79,14 @@ def export_cell(row: pd.Series) -> tuple[list[float], list[float], list[str], li
 def export_population_density(
         gdf: geopandas.GeoDataFrame,
         outfile: str | pathlib.PosixPath | pathlib.Path,
-        crs: int | str = 3067
+        crs: int | str = 3067,
+        weekdays: bool = True
 ) -> None:
     assert gdf.crs.srs == f'EPSG:{crs}', f'Expected crs EPSG:{crs}'
 
     X, Y, mode, n_people = [], [], [], []
     for idx, row in gdf.iterrows():
-        output_lists = export_cell(row)
+        output_lists = export_cell(row, weekdays)
         X += output_lists[0]
         Y += output_lists[1]
         mode += output_lists[2]
@@ -49,4 +100,4 @@ def export_population_density(
 
     out_gdf.to_csv(outfile)
 
-    return 0
+    return
