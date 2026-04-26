@@ -103,8 +103,7 @@ def read_Lappeenranta(
 # --------------------------------------------------------------------
 def baseline_number_cars(
         *,
-        weekdays: bool = True,
-        crs: int | str = 3067,
+        population_night,
 ) -> geopandas.GeoDataFrame:
     """
     Derive the initial number of cars based on the population density at night
@@ -122,20 +121,18 @@ def baseline_number_cars(
     geopandas.GeoDataFrame
             distribution of cars by night (used as baseline)
     """
-    night_population = population_density_Lappeenranta(time_period=(22, 6),
-                                                       weekdays=weekdays, crs=crs)[0]
-    night_population['initial_nb_cars'] = night_population['total_visits'] * NB_CARS_PER_PERSON
+    population_night['initial_nb_cars'] = population_night['total_visits'] * NB_CARS_PER_PERSON
 
-    return night_population[['initial_nb_cars', 'location_id', 'geometry']]
+    return population_night[['initial_nb_cars', 'location_id', 'geometry']]
 
 
 # --------------------------------------------------------------------
 def average_number_cars(
         df: pd.DataFrame,
         *,
+        population_night,
         time_period: tuple[int, int] = (0, 24),
         weekdays: bool = True,
-        crs: int | str = 3067,
 ) -> geopandas.GeoDataFrame:
     """
     Estimate the average number of cars available during the time period.
@@ -158,9 +155,7 @@ def average_number_cars(
             distribution of cars
     """
     print("    Derive initial number of cars")
-    print("    **********")
-    number_cars = baseline_number_cars(weekdays=weekdays, crs=crs)
-    print("    **********")
+    number_cars = baseline_number_cars(population_night=population_night)
 
     if time_period[0] < time_period[1]:
         hours = np.arange(time_period[0], time_period[1] + 1, 1)
@@ -223,6 +218,7 @@ def average_number_bikes(
 
 # --------------------------------------------------------------------
 def number_cars_Lappeenranta(
+        population_night,
         *,
         time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
@@ -256,9 +252,11 @@ def number_cars_Lappeenranta(
     print('  Read data')
     sub_telia = read_Lappeenranta(month=month, season=season, crs=crs)
 
+    # print("    Add average distance (straight line)")
+    # telia_with_distance = add_centroid2centroid_distance(sub_telia, TELIA_DATA_DIRECTORY, crs)
 
     print('  Derive number of cars')
-    number_cars = average_number_cars(sub_telia, time_period=time_period, weekdays=weekdays, crs=crs)
+    number_cars = average_number_cars(sub_telia, population_night=population_night, time_period=time_period)
 
     return number_cars
 
