@@ -1,11 +1,10 @@
 import pathlib
 
-import duckdb
 import geopandas
 import pandas as pd
 from tqdm import tqdm
 
-from geoanalysis_functions import read_shp
+from geoanalysis_functions import read_shp, read_parquet
 
 # Paths definition
 NOTEBOOK_PATH = pathlib.Path().resolve()
@@ -53,37 +52,6 @@ def add_geometry(
                       right_on="location_id")
 
     return geopandas.GeoDataFrame(merged, geometry=merged['geometry'])
-
-
-# --------------------------------------------------------------------
-def read_parquet(
-        filename: str | pathlib.PosixPath | pathlib.Path,
-        crs: int | str = 3067
-) -> geopandas.GeoDataFrame:
-    """
-    Read the Telia's dataset, add the geometry of the grid and return
-    the data into a GeoDataFrame.
-
-    Parameters
-    ----------
-    filename: str or pathlib.PosixPath or pathlib.Path
-            path of the input file
-    crs: int or str
-            the desired output CRS (default: 3067)
-
-    Returns
-    -------
-    geopandas.GeoDataFrame
-            Telia's data with the associated geometry
-    """
-    filename = pathlib.Path(filename)
-    df = duckdb.sql(f"""SELECT
-                           *
-                        FROM
-                           '{filename}'
-                     """).df()
-
-    return df
 
 
 # --------------------------------------------------------------------
@@ -211,28 +179,28 @@ def read_Lappeenranta(*,
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
 
     print("    Read Telia trip data")
-    telia_gdf = read_parquet(TELIA_DATA_DIRECTORY / "trips_grid_hourly_ekarjala_2025.parquet", crs=crs)
+    telia_df = read_parquet(TELIA_DATA_DIRECTORY / "trips_grid_hourly_ekarjala_2025.parquet")
 
     print("    Extract the time period")
     if month is not None:
-        month_gdf = extract_month(telia_gdf, month)
-        sub_gdf = extract_time_period(month_gdf, time_period, weekdays)
-        sub_gdf = month_gdf.copy()
+        month_df = extract_month(telia_df, month)
+        sub_df = extract_time_period(month_df, time_period, weekdays)
+        sub_df = month_df.copy()
     else:
-        season_gdf = extract_season(telia_gdf, season)
-        sub_gdf = extract_time_period(season_gdf, time_period, weekdays)
-        sub_gdf = season_gdf.copy()
+        season_df = extract_season(telia_df, season)
+        sub_df = extract_time_period(season_df, time_period, weekdays)
+        sub_df = season_df.copy()
 
     print("    Extract Lappeenranta area")
-    origins = add_geometry(sub_gdf[['location_id_origin']],
+    origins = add_geometry(sub_df[['location_id_origin']],
                            TELIA_DATA_DIRECTORY, crs)
-    destinations = add_geometry(sub_gdf[['location_id_destination']],
+    destinations = add_geometry(sub_df[['location_id_destination']],
                                 TELIA_DATA_DIRECTORY, crs)
     sub_orig = geopandas.sjoin(origins, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
     sub_dest = geopandas.sjoin(destinations, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
 
-    sub_telia = sub_gdf[(sub_gdf['location_id_origin'].isin(sub_orig['location_id_origin'].to_list())) |
-                        (sub_gdf['location_id_destination'].isin(sub_dest['location_id_destination'].to_list()))]
+    sub_telia = sub_df[(sub_df['location_id_origin'].isin(sub_orig['location_id_origin'].to_list())) |
+                       (sub_df['location_id_destination'].isin(sub_dest['location_id_destination'].to_list()))]
 
 
     return sub_telia
