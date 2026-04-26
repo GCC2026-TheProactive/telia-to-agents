@@ -4,23 +4,8 @@ import geopandas
 import pandas as pd
 from tqdm import tqdm
 
+from constants import *
 from geoanalysis_functions import read_shp, read_parquet
-
-# Paths definition
-NOTEBOOK_PATH = pathlib.Path().resolve()
-DATA_DIRECTORY = NOTEBOOK_PATH / "data"
-TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_trips"
-OUTPUT_DIRECTORY = DATA_DIRECTORY / "output"
-
-CRS = 25835
-WEEKDAYS = True
-FRACTION_CARS = 0.59
-FRACTION_BIKES = 0.16
-AVERAGE_CAR_OCCUPANCY = [1.3, 1.7]
-
-MUNICIPALITIES_DATA = DATA_DIRECTORY / "finland_municipalities_2021.gpkg"
-
-LAPPEENRANTA = ['Lappeenranta', 'Imatra', 'Lemi', 'Luumäki', 'Miehikkälä', 'Savitaipale', 'Taipalsaari']
 
 
 # --------------------------------------------------------------------
@@ -153,19 +138,28 @@ def extract_time_period(
 
 
 # --------------------------------------------------------------------
-def read_Lappeenranta(*,
-                      time_period: tuple[int, int] = (0, 24),
-                      month: int | None = None,
-                      season: str | None = 'spring',
-                      weekdays: bool = True,
-                      crs: int | str = 3067
-                      ) -> geopandas.GeoDataFrame:
+def read_Lappeenranta(
+        *,
+        time_period: tuple[int, int] = (0, 24),
+        month: int | None = None,
+        season: str | None = 'spring',
+        weekdays: bool = True,
+        crs: int | str = 3067
+) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset and extract the data corresponding to
     the area surrounding Lappeenranta.
 
     Parameters
     ----------
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    month: int
+            month of interest
+    season: str
+            season of interest
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
     crs: int or str
             the desired output CRS (default: 3067)
 
@@ -179,7 +173,7 @@ def read_Lappeenranta(*,
     sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
 
     print("    Read Telia trip data")
-    telia_df = read_parquet(TELIA_DATA_DIRECTORY / "trips_grid_hourly_ekarjala_2025.parquet")
+    telia_df = read_parquet(TELIA_TRIPS_DATA_DIRECTORY / "trips_grid_hourly_ekarjala_2025.parquet")
 
     print("    Extract the time period")
     if month is not None:
@@ -193,15 +187,14 @@ def read_Lappeenranta(*,
 
     print("    Extract Lappeenranta area")
     origins = add_geometry(sub_df[['location_id_origin']],
-                           TELIA_DATA_DIRECTORY, crs)
+                           TELIA_TRIPS_DATA_DIRECTORY, crs)
     destinations = add_geometry(sub_df[['location_id_destination']],
-                                TELIA_DATA_DIRECTORY, crs)
+                                TELIA_TRIPS_DATA_DIRECTORY, crs)
     sub_orig = geopandas.sjoin(origins, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
     sub_dest = geopandas.sjoin(destinations, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
 
     sub_telia = sub_df[(sub_df['location_id_origin'].isin(sub_orig['location_id_origin'].to_list())) |
                        (sub_df['location_id_destination'].isin(sub_dest['location_id_destination'].to_list()))]
-
 
     return sub_telia
 

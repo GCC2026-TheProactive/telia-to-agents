@@ -4,28 +4,10 @@ import geopandas
 import osmnx
 from networkx.classes.multidigraph import MultiDiGraph
 
+from constants import *
 from etl_population_density import population_density_Lappeenranta
 from etl_telia_travel import average_number_car, average_number_bikes
 from export_functions import export_population_density
-
-# Paths definition
-NOTEBOOK_PATH = pathlib.Path().resolve()
-DATA_DIRECTORY = NOTEBOOK_PATH / "data"
-TELIA_DATA_DIRECTORY = DATA_DIRECTORY / "telia_hourly_visits"
-OUTPUT_DIRECTORY = DATA_DIRECTORY / "output"
-
-CRS = 25835
-WEEKDAYS = True
-FRACTION_CARS = 0.59
-FRACTION_BIKES = 0.16
-AVERAGE_CAR_OCCUPANCY = [1.3, 1.7]
-
-MUNICIPALITIES_DATA = DATA_DIRECTORY / "finland_municipalities_2021.gpkg"
-POPULATION_CENSUS_2021_AT_100m = (DATA_DIRECTORY / "JRC-ESTAT_Census_Population_2021_100m" /
-                                  "JRC-ESTAT_Census_Population_2021_100m.tif")
-
-CAPITAL_AREA = ['Helsinki', 'Espoo', 'Vantaa', 'Kauniainen']
-LAPPEENRANTA = ['Lappeenranta', 'Imatra', 'Lemi', 'Luumäki', 'Miehikkälä', 'Savitaipale', 'Taipalsaari']
 
 ENTRIES_VISITS = ['visit_count', 'resident_visit_count', 'worker_visit_count',
                   'non_resident_non_worker_visit_count']
@@ -86,7 +68,7 @@ def export_data(
 # --------------------------------------------------------------------
 
 print('Population density')
-population_density, osm_graph = population_density_Lappeenranta()
+population_density, osm_graph = population_density_Lappeenranta(weekdays=WEEKDAYS, crs=CRS, download_osm=DOWNLOAD_OSM)
 population_density = merge_datasets(population_density, weekdays=WEEKDAYS)
 
 print('Export data')

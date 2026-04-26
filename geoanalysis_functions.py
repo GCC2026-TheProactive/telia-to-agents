@@ -1,6 +1,8 @@
 import pathlib
 
+import duckdb
 import geopandas
+import pandas as pd
 import rioxarray
 import shapely
 import xarray
