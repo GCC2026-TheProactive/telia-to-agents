@@ -59,36 +59,6 @@ def add_geometry(
 
 
 # --------------------------------------------------------------------
-def read_parquet(
-        filename: str | pathlib.PosixPath | pathlib.Path
-) -> pd.DataFrame:
-    """
-    Read the Telia's dataset, add the geometry of the grid and return
-    the data into a GeoDataFrame.
-
-    Parameters
-    ----------
-    filename: str or pathlib.PosixPath or pathlib.Path
-            path of the input file
-    crs: int or str
-            the desired output CRS (default: 3067)
-
-    Returns
-    -------
-    pd.DataFrame
-            Telia's data with the associated geometry
-    """
-    filename = pathlib.Path(filename)
-    df = duckdb.sql(f"""SELECT
-                           *
-                        FROM
-                           '{filename}'
-                     """).df()
-
-    return df
-
-
-# --------------------------------------------------------------------
 def extract_season(
         df: pd.DataFrame,
         season: str = 'spring'
