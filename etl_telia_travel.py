@@ -42,17 +42,17 @@ def add_geometry(
 
 # --------------------------------------------------------------------
 def extract_time_period(
-        gdf: geopandas.GeoDataFrame,
+        df: pd.DataFrame,
         time_period: tuple[int, int] = (0, 24),
         weekdays: bool = True,
-) -> geopandas.GeoDataFrame:
+) -> pd.DataFrame:
     """
     Extract the time period during the day and the week from
     the Telia data.
 
     Parameters
     ----------
-    gdf: geopandas.GeoDataFrame
+    df: pd.DataFrame
             Telia's data for the region of interest with
             the associated geometry
     time_period: tuple of int
@@ -62,22 +62,22 @@ def extract_time_period(
 
     Returns
     -------
-    geopandas.GeoDataFrame
+    pd.DataFrame
             Telia's data for the time period of interest
     """
-    hour = gdf['observation_start_datetime'].dt.hour
+    hour = df['observation_start_datetime'].dt.hour
 
     if time_period[0] < time_period[1]:
-        sub_gdf = gdf[(time_period[0] <= hour) & (hour < time_period[1])]
+        sub_df = df[(time_period[0] <= hour) & (hour < time_period[1])]
     elif time_period[0] > time_period[1]:
-        sub_gdf = gdf[(time_period[1] <= hour) | (hour < time_period[0])]
+        sub_df = df[(time_period[1] <= hour) | (hour < time_period[0])]
     elif time_period[0] == time_period[1]:
-        sub_gdf = gdf[(hour == time_period[0])]
+        sub_df = df[(hour == time_period[0])]
 
     if weekdays:
-        return sub_gdf[sub_gdf['observation_start_datetime'].dt.weekday <= 4]
+        return sub_df[sub_df['observation_start_datetime'].dt.weekday <= 4]
     else:
-        return sub_gdf[sub_gdf['observation_start_datetime'].dt.weekday > 4]
+        return sub_df[sub_df['observation_start_datetime'].dt.weekday > 4]
 
 
 # --------------------------------------------------------------------
@@ -151,9 +151,9 @@ def average_number_car(
 ) -> geopandas.GeoDataFrame:
     print("    Derive the average number of cars")
     if weekdays:
-        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[0]
+        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS_PER_TRIPS / AVERAGE_CAR_OCCUPANCY[0]
     else:
-        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[1]
+        gdf['nb_cars'] = gdf['total_visits'] * FRACTION_BIKES_PER_TRIPS / AVERAGE_CAR_OCCUPANCY[1]
 
     return gdf
 
