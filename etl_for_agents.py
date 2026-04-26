@@ -5,8 +5,8 @@ import osmnx
 from networkx.classes.multidigraph import MultiDiGraph
 
 from constants import *
-from etl_population_density import population_density_Lappeenranta
 from etl_number_cars import average_number_bikes, number_cars_Lappeenranta
+from etl_population_density import population_density_Lappeenranta
 from export_functions import export_population_density
 
 ENTRIES_VISITS = ['visit_count', 'resident_visit_count', 'worker_visit_count',
@@ -18,7 +18,7 @@ def merge_datasets(
         visits: geopandas.GeoDataFrame,
         cars: geopandas.GeoDataFrame
 ) -> geopandas.GeoDataFrame:
-    visits_with_cars = visits.merge(cars, how="inner", on=["location_id","geometry"])
+    visits_with_cars = visits.merge(cars, how="inner", on=["location_id", "geometry"])
     out_visits = average_number_bikes(visits_with_cars)
 
     return out_visits

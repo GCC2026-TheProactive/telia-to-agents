@@ -7,7 +7,6 @@ from tqdm import tqdm
 
 from constants import *
 from data_manipulation_functions import extract_season, extract_month, extract_time_period
-from etl_population_density import population_density_Lappeenranta
 from geoanalysis_functions import read_shp, read_parquet
 
 
@@ -259,6 +258,5 @@ def number_cars_Lappeenranta(
     number_cars = average_number_cars(sub_telia, population_night=population_night, time_period=time_period)
 
     return number_cars
-
 
 # --------------------------------------------------------------------
