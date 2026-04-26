@@ -53,7 +53,7 @@ def read_shp(filename: str | pathlib.PosixPath | pathlib.Path,
             reprojected data
     """
     gdf = geopandas.read_file(filename)
-    if (crs == None):
+    if crs is None:
         return gdf
     try:
         return gdf.to_crs(f"EPSG:{crs}")
@@ -81,7 +81,7 @@ def read_raster(filename: str | pathlib.PosixPath,
             reprojected raster data
     """
     data = rioxarray.open_rasterio(filename)
-    if (crs == None):
+    if crs is None:
         return data
     try:
         return data.rio.reproject(f"EPSG:{crs}")
@@ -101,8 +101,6 @@ def read_parquet(
     ----------
     filename: str or pathlib.PosixPath or pathlib.Path
             path of the input file
-    crs: int or str
-            the desired output CRS (default: 3067)
 
     Returns
     -------

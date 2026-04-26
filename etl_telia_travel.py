@@ -150,7 +150,7 @@ def average_number_car(
         weekdays: bool = True
 ) -> geopandas.GeoDataFrame:
     print("    Derive the average number of cars")
-    if (weekdays):
+    if weekdays:
         gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[0]
     else:
         gdf['nb_cars'] = gdf['total_visits'] * FRACTION_CARS / AVERAGE_CAR_OCCUPANCY[1]
@@ -173,7 +173,7 @@ def number_cars_Lappeenranta(
         *,
         weekdays: bool = True,
         crs: int | str = 3067,
-) -> tuple[geopandas.GeoDataFrame]:
+) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset and extract the data corresponding to
     the area surrounding Lappeenranta.
