@@ -171,26 +171,26 @@ def average_number_cars(
     hours_days = np.delete(hours, index_nights)
 
     print("    Extract hourly variations since 6:00")
-    for hour in tqdm(range(6,max(hours_days)+1,1),leave=False):
-        sub_df = extract_time_period(df,time_period = (hour,hour),weekdays=weekdays)
-        for idx,row in number_cars.iterrows():
-            cell_id = number_cars.loc[idx,'location_id']
-            exiting_cars = sub_df[(sub_df['location_id_origin']==cell_id) &
+    for hour in tqdm(range(6, max(hours_days) + 1, 1), leave=False):
+        sub_df = extract_time_period(df, time_period=(hour, hour), weekdays=weekdays)
+        for idx, row in number_cars.iterrows():
+            cell_id = number_cars.loc[idx, 'location_id']
+            exiting_cars = sub_df[(sub_df['location_id_origin'] == cell_id) &
+                                  (sub_df['mode_of_transport'] == 'Road')]['trip_count'].mean()
+            arriving_cars = sub_df[(sub_df['location_id_destination'] == cell_id) &
                                    (sub_df['mode_of_transport'] == 'Road')]['trip_count'].mean()
-            arriving_cars = sub_df[(sub_df['location_id_destination']==cell_id) &
-                                    (sub_df['mode_of_transport'] == 'Road')]['trip_count'].mean()
             number_cars.loc[idx, f'variation_{hour}h'] = arriving_cars - exiting_cars
 
     print("    Derive the hourly number of cars")
     for hour in hours_days:
-        list_entries = [f'variation_{h}h' for h in range(6,hour,1)]
+        list_entries = [f'variation_{h}h' for h in range(6, hour, 1)]
         number_cars[f'nb_cars_{hour}h'] = number_cars['initial_nb_cars'] + number_cars[list_entries].sum(axis=1)
 
     print("    Derive the average number of cars")
     list_entries = [name for name in number_cars if 'nb_cars_' in name]
     number_cars['total_nb_cars'] = number_cars[list_entries].mean(axis=1)
 
-    ENTRIES_CARS = ['initial_nb_cars'] + list_entries + ['total_nb_cars','geometry']
+    ENTRIES_CARS = ['initial_nb_cars'] + list_entries + ['total_nb_cars', 'geometry']
 
     gdf = geopandas.GeoDataFrame(number_cars[ENTRIES_CARS], geometry=number_cars['geometry'])
 
@@ -216,7 +216,7 @@ def average_number_bikes(
         gdf: geopandas.GeoDataFrame,
 ) -> geopandas.GeoDataFrame:
     print("    Derive the average number of bikes")
-    gdf['nb_bikes'] = gdf['total_visits'] * FRACTION_BIKES
+    gdf['nb_bikes'] = gdf['total_visits'] * FRACTION_BIKES_PER_TRIPS
 
     return gdf
 
