@@ -100,7 +100,7 @@ def read_capital_area(
 
     print("    Extract the sub area")
     sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
-    sub_telia = geopandas.sjoin(sub_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
+    sub_telia = geopandas.sjoin(sub_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="within")
 
     if download_osm:
         print("    Download OSM data")
@@ -171,7 +171,7 @@ def read_Lappeenranta(
 
     print("    Extract the sub area")
     sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
-    sub_telia = geopandas.sjoin(sub_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="intersects")
+    sub_telia = geopandas.sjoin(sub_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="within")
 
     if download_osm:
         print("    Download OSM data")
