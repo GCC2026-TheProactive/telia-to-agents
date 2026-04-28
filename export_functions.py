@@ -101,8 +101,13 @@ def export_population_density(
                 'Y': Y,
                 'mode': mode,
                 'n_people': n_people}
-    out_gdf = pd.DataFrame(out_dict)
+    out_df = pd.DataFrame(out_dict)
+    out_gdf = geopandas.GeoDataFrame(
+        out_df,
+        geometry=geopandas.points_from_xy(out_df['X'], out_df['Y']),
+        crs=f'EPSG:{crs}')
 
-    out_gdf.to_csv(outfile)
+    out_gdf.to_csv(str(outfile) + ".csv")
+    out_gdf.to_file(str(outfile) + ".gpkg")
 
     return

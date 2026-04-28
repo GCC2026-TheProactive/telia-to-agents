@@ -89,5 +89,5 @@ print("Combine the population density and number of cars")
 population_with_cars = merge_datasets(population_density, number_cars)
 
 print('Export data')
-export_data(population_with_cars, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_agents.csv",
+export_data(population_with_cars, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "Lappeenranta_agents",
             outfile_osm=OUTPUT_DIRECTORY / "Lappeenranta.osm", weekdays=WEEKDAYS)
