@@ -38,7 +38,10 @@ def export_cell(
     nb_cars = int(row['nb_cars'])
     nb_bikes = int(row['nb_bikes'])
     geom = row['geometry']
-    multi_positions = geopandas.GeoSeries([geom]).sample_points(nb_persons)[0]
+    if nb_persons > 1:
+        multi_positions = geopandas.GeoSeries([geom]).sample_points(nb_persons)[0]
+    else:
+        multi_positions = geopandas.GeoSeries([geom]).sample_points(nb_persons)
     positions = [point for point in multi_positions.geoms]
 
     nb_agents = 0
