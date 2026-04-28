@@ -65,7 +65,7 @@ def export_data(
 
 # --------------------------------------------------------------------
 
-time_period = (4, 6)
+time_period = (9, 16)
 month = None
 season = 'spring'
 
