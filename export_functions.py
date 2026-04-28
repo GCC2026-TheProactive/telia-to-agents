@@ -1,4 +1,5 @@
 import pathlib
+import random
 
 import geopandas
 import numpy as np
@@ -43,6 +44,7 @@ def export_cell(
     else:
         multi_positions = geopandas.GeoSeries([geom]).sample_points(nb_persons)
     positions = [point for point in multi_positions.geoms]
+    random.shuffle(positions)
 
     nb_agents = 0
     for idx, point in zip(range(len(positions)), positions):
