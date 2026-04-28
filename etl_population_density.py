@@ -206,17 +206,10 @@ def average_population_density(
     geopandas.GeoDataFrame
             subset of Telia data
     """
-    if time_period[0] < time_period[1]:
-        duration = time_period[1] - time_period[0]
-    else:
-        duration = (24 - time_period[0]) + time_period[1]
-
     print('    Derive the population density')
     visits = gdf[ENTRIES_VISITS + ['location_id', 'geometry']]
     visits['total_visits'] = visits[ENTRIES_VISITS].sum(axis=1)
     avg_visits = visits.groupby(['location_id', 'geometry']).mean().reset_index()
-    for entry in ENTRIES_VISITS + ['total_visits']:
-        avg_visits[entry] = avg_visits[entry] / duration
 
     new_gdf = geopandas.GeoDataFrame(avg_visits, geometry=avg_visits['geometry'])
 
