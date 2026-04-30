@@ -100,6 +100,64 @@ def read_Lappeenranta(
 
 
 # --------------------------------------------------------------------
+def read_South_Karelia(
+        *,
+        month: int | None = None,
+        season: str | None = None,
+        crs: int | str = 3067
+) -> geopandas.GeoDataFrame:
+    """
+    Read the Telia's dataset and extract the data corresponding to
+    the area surrounding Lappeenranta.
+
+    Parameters
+    ----------
+    month: int
+            month of interest
+    season: str
+            season of interest
+    crs: int or str
+            the desired output CRS (default: 3067)
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            Telia's data for the surroundings of Lappeenranta with
+            the associated geometry
+    """
+    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
+    sub_area = municipalities[municipalities['NAMEFIN'].isin(SOUTH_KARELIA)]
+
+    print("    Read Telia trip data")
+    telia_df = read_parquet(TELIA_TRIPS_DATA_DIRECTORY / "trips_grid_hourly_ekarjala_2025.parquet")
+    telia_df = telia_df.rename(columns={"observation_start_date": "observation_start_datetime"})
+    telia_df = telia_df.rename(columns={"observation_end_date": "observation_end_datetime"})
+
+    print("    Extract the time period")
+    if month is not None:
+        month_df = extract_month(telia_df, month)
+        sub_df = month_df.copy()
+    elif season is not None:
+        season_df = extract_season(telia_df, season)
+        sub_df = season_df.copy()
+    else:
+        sub_df = telia_df.copy()
+
+    print("    Extract Lappeenranta area")
+    origins = add_geometry(sub_df[['location_id_origin']],
+                           TELIA_TRIPS_DATA_DIRECTORY, crs)
+    destinations = add_geometry(sub_df[['location_id_destination']],
+                                TELIA_TRIPS_DATA_DIRECTORY, crs)
+    sub_orig = geopandas.sjoin(origins, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="within")
+    sub_dest = geopandas.sjoin(destinations, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="within")
+
+    sub_telia = sub_df[(sub_df['location_id_origin'].isin(sub_orig['location_id_origin'].to_list())) |
+                       (sub_df['location_id_destination'].isin(sub_dest['location_id_destination'].to_list()))]
+
+    return sub_telia
+
+
+# --------------------------------------------------------------------
 def baseline_number_cars(
         *,
         population_night,
@@ -249,7 +307,8 @@ def number_cars_Lappeenranta(
             the associated geometry
     """
     print('  Read data')
-    sub_telia = read_Lappeenranta(month=month, season=season, crs=crs)
+    # sub_telia = read_Lappeenranta(month=month, season=season, crs=crs)
+    sub_telia = read_South_Karelia(month=month, season=season, crs=crs)
 
     print('  Derive number of cars')
     number_cars = average_number_cars(sub_telia, population_night=population_night, time_period=time_period)

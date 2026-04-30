@@ -23,3 +23,4 @@ NIGHT_HOURS = [22, 23, 24, 0, 1, 2, 3, 4, 5]
 
 CAPITAL_AREA = ['Helsinki', 'Espoo', 'Vantaa', 'Kauniainen']
 LAPPEENRANTA = ['Lappeenranta', 'Imatra', 'Lemi', 'Luumäki', 'Miehikkälä', 'Savitaipale', 'Taipalsaari']
+SOUTH_KARELIA = LAPPEENRANTA + ['Ruokolahti', 'Parikkala', 'Rautjärvi']
