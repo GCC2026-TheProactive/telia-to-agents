@@ -3,6 +3,7 @@ import pathlib
 import geopandas
 import osmnx
 import pandas as pd
+import shapely
 from networkx.classes.multidigraph import MultiDiGraph
 
 from constants import *
@@ -224,6 +225,7 @@ def read_South_Karelia(
     """
     municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(SOUTH_KARELIA)]
+    poly_area = shapely.union_all(sub_area['geometry'].to_list())
 
     print("    Read Telia visit data")
     telia_df = read_parquet(TELIA_VISITS_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet")
@@ -242,7 +244,7 @@ def read_South_Karelia(
 
     print("    Extract the sub area")
     sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
-    sub_telia = geopandas.sjoin(sub_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="within")
+    sub_telia = sub_gdf[sub_gdf.within(poly_area)]
 
     if download_osm:
         print("    Download OSM data")

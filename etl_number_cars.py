@@ -3,6 +3,7 @@ import pathlib
 import geopandas
 import numpy as np
 import pandas as pd
+import shapely
 from tqdm import tqdm
 
 from constants import *
@@ -127,6 +128,7 @@ def read_South_Karelia(
     """
     municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(SOUTH_KARELIA)]
+    poly_area = shapely.union_all(sub_area['geometry'].to_list())
 
     print("    Read Telia trip data")
     telia_df = read_parquet(TELIA_TRIPS_DATA_DIRECTORY / "trips_grid_hourly_ekarjala_2025.parquet")
@@ -148,8 +150,8 @@ def read_South_Karelia(
                            TELIA_TRIPS_DATA_DIRECTORY, crs)
     destinations = add_geometry(sub_df[['location_id_destination']],
                                 TELIA_TRIPS_DATA_DIRECTORY, crs)
-    sub_orig = geopandas.sjoin(origins, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="within")
-    sub_dest = geopandas.sjoin(destinations, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="within")
+    sub_orig = origins[origins.within(poly_area)]
+    sub_dest = destinations[destinations.within(poly_area)]
 
     sub_telia = sub_df[(sub_df['location_id_origin'].isin(sub_orig['location_id_origin'].to_list())) |
                        (sub_df['location_id_destination'].isin(sub_dest['location_id_destination'].to_list()))]
