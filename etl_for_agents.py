@@ -51,7 +51,11 @@ def export_data(
     Returns
     -------
     """
-    print("    Export population density")
+    print("    Export population density and cars distribution")
+    gdf.to_csv(str(outfile_pop_dens) + "_population+cars.csv")
+    gdf.to_file(str(outfile_pop_dens) + "_population+cars.gpkg")
+
+    print("    Export agents")
     export_agents(gdf, outfile_pop_dens, CRS)
 
     if graph is not None:
@@ -89,5 +93,5 @@ print("Combine the population density and number of cars")
 population_with_cars = merge_datasets(population_density, number_cars)
 
 print('Export data')
-export_data(population_with_cars, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "South_Karelia_agents",
+export_data(population_with_cars, osm_graph, outfile_pop_dens=OUTPUT_DIRECTORY / "South_Karelia",
             outfile_osm=OUTPUT_DIRECTORY / "South_Karelia.osm", weekdays=WEEKDAYS)

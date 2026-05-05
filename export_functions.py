@@ -109,7 +109,7 @@ def export_agents(
         geometry=geopandas.points_from_xy(out_df['X'], out_df['Y']),
         crs=f'EPSG:{crs}')
 
-    out_gdf.to_csv(str(outfile) + ".csv")
-    out_gdf.to_file(str(outfile) + ".gpkg")
+    out_gdf.to_csv(str(outfile) + "_agents.csv")
+    out_gdf.to_file(str(outfile) + "_agents.gpkg")
 
     return
