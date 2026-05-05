@@ -81,7 +81,7 @@ population_density, osm_graph = population_density_Lappeenranta(
 print('Population density by night')
 population_night = population_density_Lappeenranta(
     time_period=time_period, month=month, season=season,
-    weekdays=WEEKDAYS, crs=CRS, download_osm=DOWNLOAD_OSM)[0]
+    weekdays=WEEKDAYS, crs=CRS)[0]
 
 print('Distribution of cars')
 number_cars = number_cars_Lappeenranta(
