@@ -187,6 +187,7 @@ def read_Lappeenranta(
 
 # --------------------------------------------------------------------
 def read_South_Karelia(
+        sub_area: geopandas.GeoDataFrame,
         *,
         time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
@@ -222,8 +223,6 @@ def read_South_Karelia(
     MultiDiGraph
             OpenStreetMap graph for the area covered by the return Telia data
     """
-    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
-    sub_area = municipalities[municipalities['NAMEFIN'].isin(SOUTH_KARELIA)]
     joined_poly = sub_area.geometry.union_all()
 
     print("    Read Telia visit data")
@@ -293,6 +292,7 @@ def average_population_density(
 
 # --------------------------------------------------------------------
 def population_density_Lappeenranta(
+        sub_area: geopandas.GeoDataFrame,
         *,
         time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
@@ -331,8 +331,8 @@ def population_density_Lappeenranta(
     print('  Read data')
     # sub_telia, osm_graph = read_Lappeenranta(time_period=time_period, month=month, season=season, weekdays=weekdays,
     #                                          crs=crs, download_osm=download_osm)
-    sub_telia, osm_graph = read_South_Karelia(time_period=time_period, month=month, season=season, weekdays=weekdays,
-                                              crs=crs, download_osm=download_osm)
+    sub_telia, osm_graph = read_South_Karelia(sub_area, time_period=time_period, month=month, season=season,
+                                              weekdays=weekdays, crs=crs, download_osm=download_osm)
 
     print('  Derive population density')
     population_density = average_population_density(sub_telia, time_period=time_period)

@@ -101,6 +101,7 @@ def read_Lappeenranta(
 
 # --------------------------------------------------------------------
 def read_South_Karelia(
+        sub_area: geopandas.GeoDataFrame,
         *,
         month: int | None = None,
         season: str | None = None,
@@ -125,8 +126,6 @@ def read_South_Karelia(
             Telia's data for the surroundings of Lappeenranta with
             the associated geometry
     """
-    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
-    sub_area = municipalities[municipalities['NAMEFIN'].isin(SOUTH_KARELIA)]
     joined_poly = sub_area.geometry.union_all()
 
     print("    Read Telia trip data")
@@ -149,8 +148,8 @@ def read_South_Karelia(
                            TELIA_TRIPS_DATA_DIRECTORY, crs)
     destinations = add_geometry(sub_df[['location_id_destination']],
                                 TELIA_TRIPS_DATA_DIRECTORY, crs)
-    sub_orig = origins[origins.within(poly_area)]
-    sub_dest = destinations[destinations.within(poly_area)]
+    sub_orig = origins[origins.intersects(joined_poly)]
+    sub_dest = destinations[destinations.intersects(joined_poly)]
 
     sub_telia = sub_df[(sub_df['location_id_origin'].isin(sub_orig['location_id_origin'].to_list())) |
                        (sub_df['location_id_destination'].isin(sub_dest['location_id_destination'].to_list()))]
@@ -276,6 +275,7 @@ def average_number_bikes(
 
 # --------------------------------------------------------------------
 def number_cars_Lappeenranta(
+        sub_area: geopandas.GeoDataFrame,
         population_night,
         *,
         time_period: tuple[int, int] = (0, 24),
@@ -309,7 +309,7 @@ def number_cars_Lappeenranta(
     """
     print('  Read data')
     # sub_telia = read_Lappeenranta(month=month, season=season, crs=crs)
-    sub_telia = read_South_Karelia(month=month, season=season, crs=crs)
+    sub_telia = read_South_Karelia(sub_area, month=month, season=season, crs=crs)
 
     print('  Derive number of cars')
     number_cars = average_number_cars(sub_telia, population_night=population_night, time_period=time_period)

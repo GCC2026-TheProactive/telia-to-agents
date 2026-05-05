@@ -7,7 +7,6 @@ import pandas as pd
 from scipy.stats import poisson
 
 from constants import *
-from geoanalysis_functions import read_shp
 
 COLNAMES_CONVERSION = {'total_visits': 'nb_persons',
                        'total_nb_cars': 'nb_cars'}
@@ -87,13 +86,13 @@ def export_cell(
 
 def export_agents(
         gdf: geopandas.GeoDataFrame,
+        sub_area: geopandas.GeoDataFrame,
         outfile: str | pathlib.PosixPath | pathlib.Path,
         crs: int | str = 3067,
         weekdays: bool = True
 ) -> None:
     assert gdf.crs.srs == f'EPSG:{crs}', f'Expected crs EPSG:{crs}'
-    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
-    sub_area = municipalities[municipalities['NAMEFIN'].isin(SOUTH_KARELIA)]
+
     poly_area = geopandas.GeoSeries(
         [sub_area.geometry.union_all()]
     )
