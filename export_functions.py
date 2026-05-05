@@ -81,7 +81,7 @@ def export_cell(
     return X, Y, mode, n_people
 
 
-def export_population_density(
+def export_agents(
         gdf: geopandas.GeoDataFrame,
         outfile: str | pathlib.PosixPath | pathlib.Path,
         crs: int | str = 3067,

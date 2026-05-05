@@ -7,7 +7,7 @@ from networkx.classes.multidigraph import MultiDiGraph
 from constants import *
 from etl_number_cars import average_number_bikes, number_cars_Lappeenranta
 from etl_population_density import population_density_Lappeenranta
-from export_functions import export_population_density
+from export_functions import export_agents
 
 ENTRIES_VISITS = ['visit_count', 'resident_visit_count', 'worker_visit_count',
                   'non_resident_non_worker_visit_count']
@@ -52,7 +52,7 @@ def export_data(
     -------
     """
     print("    Export population density")
-    export_population_density(gdf, outfile_pop_dens, CRS)
+    export_agents(gdf, outfile_pop_dens, CRS)
 
     if graph is not None:
         print("    Export OSM data")
