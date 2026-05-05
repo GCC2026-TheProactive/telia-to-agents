@@ -127,7 +127,7 @@ def read_South_Karelia(
     """
     municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(SOUTH_KARELIA)]
-    poly_area = sub_area.geometry.union_all()
+    joined_poly = sub_area.geometry.union_all()
 
     print("    Read Telia trip data")
     telia_df = read_parquet(TELIA_TRIPS_DATA_DIRECTORY / "trips_grid_hourly_ekarjala_2025.parquet")

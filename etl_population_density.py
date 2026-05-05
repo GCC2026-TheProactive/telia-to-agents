@@ -224,7 +224,7 @@ def read_South_Karelia(
     """
     municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
     sub_area = municipalities[municipalities['NAMEFIN'].isin(SOUTH_KARELIA)]
-    poly_area = sub_area.geometry.union_all()
+    joined_poly = sub_area.geometry.union_all()
 
     print("    Read Telia visit data")
     telia_df = read_parquet(TELIA_VISITS_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet")
@@ -243,7 +243,7 @@ def read_South_Karelia(
 
     print("    Extract the sub area")
     sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
-    sub_telia = sub_gdf[sub_gdf.within(poly_area)]
+    sub_telia = sub_gdf[sub_gdf.intersects(joined_poly)]
 
     if download_osm:
         print("    Download OSM data")
