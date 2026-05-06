@@ -3,7 +3,6 @@ import pathlib
 import geopandas
 import osmnx
 import pandas as pd
-import shapely
 from networkx.classes.multidigraph import MultiDiGraph
 
 from constants import *
@@ -45,7 +44,8 @@ def add_geometry(
 
 
 # --------------------------------------------------------------------
-def read_capital_area(
+def read_Uusimaa(
+        sub_area: geopandas.GeoDataFrame,
         *,
         time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
@@ -81,8 +81,7 @@ def read_capital_area(
     MultiDiGraph
             OpenStreetMap graph for the area covered by the return Telia data
     """
-    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
-    sub_area = municipalities[municipalities['NAMEFIN'].isin(CAPITAL_AREA)]
+    joined_poly = sub_area.geometry.union_all()
 
     print("    Read Telia visit data")
     telia_df = read_parquet(TELIA_VISITS_DATA_DIRECTORY / "hourly_visits_uusimaa_2025.parquet")
@@ -101,7 +100,7 @@ def read_capital_area(
 
     print("    Extract the sub area")
     sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
-    sub_telia = geopandas.sjoin(sub_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="within")
+    sub_telia = sub_gdf[sub_gdf.intersects(joined_poly)]
 
     if download_osm:
         print("    Download OSM data")
@@ -116,78 +115,8 @@ def read_capital_area(
 
 
 # --------------------------------------------------------------------
-def read_Lappeenranta(
-        *,
-        time_period: tuple[int, int] = (0, 24),
-        month: int | None = None,
-        season: str | None = None,
-        weekdays: bool = True,
-        crs: int | str = 3067,
-        download_osm: bool = False
-) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
-    """
-    Read the Telia's dataset and extract the data corresponding to
-    the area surrounding Lappeenranta.
-
-    Parameters
-    ----------
-    time_period: tuple of int
-            starting hour and ending hour to extract
-    month: int
-            month of interest
-    season: str
-            season of interest
-    weekdays: bool
-            specify whether to extract the weekdays or the weekend
-    crs: int or str
-            the desired output CRS (default: 3067)
-    download_osm: bool
-            specify whether to download the OSM data (default: False)
-
-    Returns
-    -------
-    geopandas.GeoDataFrame
-            Telia's data for the surroundings of Lappeenranta with
-            the associated geometry
-    MultiDiGraph
-            OpenStreetMap graph for the area covered by the return Telia data
-    """
-    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
-    sub_area = municipalities[municipalities['NAMEFIN'].isin(LAPPEENRANTA)]
-
-    print("    Read Telia visit data")
-    telia_df = read_parquet(TELIA_VISITS_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet")
-    telia_df = telia_df.rename(columns={"observation_start_date": "observation_start_datetime"})
-    telia_df = telia_df.rename(columns={"observation_end_date": "observation_end_datetime"})
-
-    print("    Extract the time period")
-    if month is not None:
-        month_df = extract_month(telia_df, month)
-        sub_df = extract_time_period(month_df, time_period, weekdays)
-    elif season is not None:
-        season_df = extract_season(telia_df, season)
-        sub_df = extract_time_period(season_df, time_period, weekdays)
-    else:
-        sub_df = telia_df.copy()
-
-    print("    Extract the sub area")
-    sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
-    sub_telia = geopandas.sjoin(sub_gdf, sub_area[['NAMEFIN', 'geometry']], how="inner", predicate="within")
-
-    if download_osm:
-        print("    Download OSM data")
-        osmnx.settings.all_oneway = True
-        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all(), simplify=False)
-        osmnx.io.save_graphml(graph, filepath=OUTPUT_DIRECTORY / "Lappeenranta_osm.graphml")
-        osmnx.io.save_graph_geopackage(graph, filepath=OUTPUT_DIRECTORY / "Lappeenranta_osm.gpkg")
-    else:
-        graph = None
-
-    return sub_telia, graph
-
-
-# --------------------------------------------------------------------
 def read_South_Karelia(
+        sub_area: geopandas.GeoDataFrame,
         *,
         time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
@@ -223,9 +152,7 @@ def read_South_Karelia(
     MultiDiGraph
             OpenStreetMap graph for the area covered by the return Telia data
     """
-    municipalities = read_shp(MUNICIPALITIES_DATA, crs=crs)
-    sub_area = municipalities[municipalities['NAMEFIN'].isin(SOUTH_KARELIA)]
-    poly_area = shapely.union_all(sub_area['geometry'].to_list())
+    joined_poly = sub_area.geometry.union_all()
 
     print("    Read Telia visit data")
     telia_df = read_parquet(TELIA_VISITS_DATA_DIRECTORY / "hourly_visits_eKarjala_Kymenlaakso_2025.parquet")
@@ -244,7 +171,7 @@ def read_South_Karelia(
 
     print("    Extract the sub area")
     sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
-    sub_telia = sub_gdf[sub_gdf.within(poly_area)]
+    sub_telia = sub_gdf[sub_gdf.intersects(joined_poly)]
 
     if download_osm:
         print("    Download OSM data")
@@ -293,7 +220,8 @@ def average_population_density(
 
 
 # --------------------------------------------------------------------
-def population_density_Lappeenranta(
+def population_density_capital_area(
+        sub_area: geopandas.GeoDataFrame,
         *,
         time_period: tuple[int, int] = (0, 24),
         month: int | None = None,
@@ -330,10 +258,55 @@ def population_density_Lappeenranta(
             OpenStreetMap graph for the area covered by the return Telia data
     """
     print('  Read data')
-    # sub_telia, osm_graph = read_Lappeenranta(time_period=time_period, month=month, season=season, weekdays=weekdays,
-    #                                          crs=crs, download_osm=download_osm)
-    sub_telia, osm_graph = read_South_Karelia(time_period=time_period, month=month, season=season, weekdays=weekdays,
-                                              crs=crs, download_osm=download_osm)
+    sub_telia, osm_graph = read_Uusimaa(sub_area, time_period=time_period, month=month, season=season,
+                                              weekdays=weekdays, crs=crs, download_osm=download_osm)
+
+    print('  Derive population density')
+    population_density = average_population_density(sub_telia, time_period=time_period)
+
+    return population_density, osm_graph
+
+# --------------------------------------------------------------------
+def population_density_Lappeenranta(
+        sub_area: geopandas.GeoDataFrame,
+        *,
+        time_period: tuple[int, int] = (0, 24),
+        month: int | None = None,
+        season: str | None = None,
+        weekdays: bool = True,
+        crs: int | str = 3067,
+        download_osm: bool = False
+) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
+    """
+    Read the Telia's dataset and extract the data corresponding to
+    the area surrounding Lappeenranta.
+
+    Parameters
+    ----------
+    time_period: tuple of int
+            starting hour and ending hour to extract
+    month: int
+            month of interest
+    season: str
+            season of interest
+    weekdays: bool
+            specify whether to extract the weekdays or the weekend
+    crs: int or str
+            the desired output CRS (default: 3067)
+    download_osm: bool
+            specify whether to download the OSM data (default: False)
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+            Telia's data for the surroundings of Lappeenranta with
+            the associated geometry
+    MultiDiGraph
+            OpenStreetMap graph for the area covered by the return Telia data
+    """
+    print('  Read data')
+    sub_telia, osm_graph = read_South_Karelia(sub_area, time_period=time_period, month=month, season=season,
+                                              weekdays=weekdays, crs=crs, download_osm=download_osm)
 
     print('  Derive population density')
     population_density = average_population_density(sub_telia, time_period=time_period)

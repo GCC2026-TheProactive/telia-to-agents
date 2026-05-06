@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import poisson
 
+from constants import *
+
 COLNAMES_CONVERSION = {'total_visits': 'nb_persons',
                        'total_nb_cars': 'nb_cars'}
 
@@ -28,6 +30,7 @@ def truncated_Poisson(list_x, mu, xmin=-1, xmax=1e3):
 
 def export_cell(
         row: pd.Series,
+        polygon: geopandas.GeoSeries,
         weekdays: bool = True
 ) -> tuple[list[float], list[float], list[str], list[int]]:
     if weekdays:
@@ -38,11 +41,11 @@ def export_cell(
     nb_persons = int(row['nb_persons'])
     nb_cars = int(row['nb_cars'])
     nb_bikes = int(row['nb_bikes'])
-    geom = row['geometry']
+    geom = geopandas.GeoSeries([row['geometry']]).intersection(polygon, align=False)
     if nb_persons > 1:
-        multi_positions = geopandas.GeoSeries([geom]).sample_points(nb_persons)[0]
+        multi_positions = geom.sample_points(nb_persons)[0]
     else:
-        multi_positions = geopandas.GeoSeries([geom]).sample_points(nb_persons)
+        multi_positions = geom.sample_points(nb_persons)
     positions = [point for point in multi_positions.geoms]
     random.shuffle(positions)
 
@@ -81,19 +84,24 @@ def export_cell(
     return X, Y, mode, n_people
 
 
-def export_population_density(
+def export_agents(
         gdf: geopandas.GeoDataFrame,
+        sub_area: geopandas.GeoDataFrame,
         outfile: str | pathlib.PosixPath | pathlib.Path,
         crs: int | str = 3067,
         weekdays: bool = True
 ) -> None:
     assert gdf.crs.srs == f'EPSG:{crs}', f'Expected crs EPSG:{crs}'
 
+    poly_area = geopandas.GeoSeries(
+        [sub_area.geometry.union_all()]
+    )
+
     new_gdf = gdf.rename(columns=COLNAMES_CONVERSION)
 
     X, Y, mode, n_people = [], [], [], []
     for idx, row in new_gdf.iterrows():
-        output_lists = export_cell(row, weekdays)
+        output_lists = export_cell(row, poly_area, weekdays)
         X += output_lists[0]
         Y += output_lists[1]
         mode += output_lists[2]
@@ -109,7 +117,7 @@ def export_population_density(
         geometry=geopandas.points_from_xy(out_df['X'], out_df['Y']),
         crs=f'EPSG:{crs}')
 
-    out_gdf.to_csv(str(outfile) + ".csv")
-    out_gdf.to_file(str(outfile) + ".gpkg")
+    out_gdf.to_csv(str(outfile) + "_agents.csv")
+    out_gdf.to_file(str(outfile) + "_agents.gpkg")
 
     return
