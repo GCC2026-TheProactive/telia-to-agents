@@ -1,9 +1,7 @@
 import pathlib
 
 import geopandas
-import osmnx
 import pandas as pd
-from networkx.classes.multidigraph import MultiDiGraph
 
 from constants import *
 from data_manipulation_functions import extract_season, extract_month, extract_time_period
@@ -52,8 +50,7 @@ def read_Uusimaa(
         season: str | None = None,
         weekdays: bool = True,
         crs: int | str = 3067,
-        download_osm: bool = False
-) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
+) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset and extract the data corresponding to
     the capital area.
@@ -72,16 +69,12 @@ def read_Uusimaa(
             specify whether to extract the weekdays or the weekend
     crs: int or str
             the desired output CRS (default: 3067)
-    download_osm: bool
-            specify whether to download the OSM data (default: False)
 
     Returns
     -------
     geopandas.GeoDataFrame
             Telia's data for the capital area with the associated
             geometry
-    MultiDiGraph
-            OpenStreetMap graph for the area covered by the return Telia data
     """
     joined_poly = sub_area.geometry.union_all()
 
@@ -104,16 +97,7 @@ def read_Uusimaa(
     sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
     sub_telia = sub_gdf[sub_gdf.intersects(joined_poly)]
 
-    if download_osm:
-        print("    Download OSM data")
-        osmnx.settings.all_oneway = True
-        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all(), simplify=False)
-        osmnx.io.save_graphml(graph, filepath=OUTPUT_DIRECTORY / "Capital_area_osm.graphml")
-        osmnx.io.save_graph_geopackage(graph, filepath=OUTPUT_DIRECTORY / "Capital_area_osm.gpkg")
-    else:
-        graph = None
-
-    return sub_telia, graph
+    return sub_telia
 
 
 # --------------------------------------------------------------------
@@ -125,8 +109,7 @@ def read_South_Karelia(
         season: str | None = None,
         weekdays: bool = True,
         crs: int | str = 3067,
-        download_osm: bool = False
-) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
+) -> geopandas.GeoDataFrame:
     """
     Read the Telia's dataset and extract the data corresponding to
     the area surrounding Lappeenranta.
@@ -145,16 +128,12 @@ def read_South_Karelia(
             specify whether to extract the weekdays or the weekend
     crs: int or str
             the desired output CRS (default: 3067)
-    download_osm: bool
-            specify whether to download the OSM data (default: False)
 
     Returns
     -------
     geopandas.GeoDataFrame
             Telia's data for the surroundings of Lappeenranta with
             the associated geometry
-    MultiDiGraph
-            OpenStreetMap graph for the area covered by the return Telia data
     """
     joined_poly = sub_area.geometry.union_all()
 
@@ -177,16 +156,7 @@ def read_South_Karelia(
     sub_gdf = add_geometry(sub_df, TELIA_VISITS_DATA_DIRECTORY, crs)
     sub_telia = sub_gdf[sub_gdf.intersects(joined_poly)]
 
-    if download_osm:
-        print("    Download OSM data")
-        osmnx.settings.all_oneway = True
-        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all(), simplify=False)
-        osmnx.io.save_graphml(graph, filepath=OUTPUT_DIRECTORY / "Lappeenranta_osm.graphml")
-        osmnx.io.save_graph_geopackage(graph, filepath=OUTPUT_DIRECTORY / "Lappeenranta_osm.gpkg")
-    else:
-        graph = None
-
-    return sub_telia, graph
+    return sub_telia
 
 
 # --------------------------------------------------------------------
@@ -229,8 +199,7 @@ def population_density_capital_area(
         season: str | None = None,
         weekdays: bool = True,
         crs: int | str = 3067,
-        download_osm: bool = False
-) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
+) -> geopandas.GeoDataFrame:
     """
     Derived the population density in the capital area, based on Telia 'visits' data.
 
@@ -248,25 +217,22 @@ def population_density_capital_area(
             specify whether to extract the weekdays or the weekend
     crs: int or str
             the desired output CRS (default: 3067)
-    download_osm: bool
-            specify whether to download the OSM data (default: False)
 
     Returns
     -------
     geopandas.GeoDataFrame
             Telia's data for the surroundings of Lappeenranta with
             the associated geometry
-    MultiDiGraph
-            OpenStreetMap graph for the area covered by the return Telia data
     """
     print('  Read data')
-    sub_telia, osm_graph = read_Uusimaa(sub_area, time_period=time_period, month=month, season=season,
-                                              weekdays=weekdays, crs=crs, download_osm=download_osm)
+    sub_telia = read_Uusimaa(sub_area, time_period=time_period, month=month, season=season,
+                             weekdays=weekdays, crs=crs)
 
     print('  Derive population density')
     population_density = average_population_density(sub_telia, time_period=time_period)
 
-    return population_density, osm_graph
+    return population_density
+
 
 # --------------------------------------------------------------------
 def population_density_Lappeenranta(
@@ -277,8 +243,7 @@ def population_density_Lappeenranta(
         season: str | None = None,
         weekdays: bool = True,
         crs: int | str = 3067,
-        download_osm: bool = False
-) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
+) -> geopandas.GeoDataFrame:
     """
     Derived the population density in the area surrounding Lappeenranta, based on Telia 'visits' data.
 
@@ -296,24 +261,20 @@ def population_density_Lappeenranta(
             specify whether to extract the weekdays or the weekend
     crs: int or str
             the desired output CRS (default: 3067)
-    download_osm: bool
-            specify whether to download the OSM data (default: False)
 
     Returns
     -------
     geopandas.GeoDataFrame
             Telia's data for the surroundings of Lappeenranta with
             the associated geometry
-    MultiDiGraph
-            OpenStreetMap graph for the area covered by the return Telia data
     """
     print('  Read data')
-    sub_telia, osm_graph = read_South_Karelia(sub_area, time_period=time_period, month=month, season=season,
-                                              weekdays=weekdays, crs=crs, download_osm=download_osm)
+    sub_telia = read_South_Karelia(sub_area, time_period=time_period, month=month, season=season,
+                                   weekdays=weekdays, crs=crs)
 
     print('  Derive population density')
     population_density = average_population_density(sub_telia)
 
-    return population_density, osm_graph
+    return population_density
 
 # --------------------------------------------------------------------
