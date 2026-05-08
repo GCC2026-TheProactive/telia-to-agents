@@ -43,6 +43,8 @@ def export_data(
             subset of Telia data
     graph: MultiDiGraph
             OpenStreetMap graph for the area covered by the return Telia data
+    sub_area: geopandas.GeoDataFrame
+            municipalities to extract, with geometry
     outfile_pop_dens: str or pathlib.PosixPath or pathlib.Path
             path of the output file for the population density data
     outfile_osm: str or pathlib.PosixPath or pathlib.Path

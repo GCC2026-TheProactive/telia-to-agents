@@ -13,12 +13,12 @@ def geometry2gdf(geom: shapely.geometry.collection.GeometryCollection,
                  crs: int | str = 4326
                  ) -> geopandas.GeoDataFrame:
     """
-    Convert a collection of geometry(ies) into a GeoDataFrame.
+    Convert a collection of geometries into a GeoDataFrame.
 
     Parameters
     ----------
     geom: shapely.geometry.collection.GeometryCollection
-            a collection of geometry(ies)
+            a collection of geometries
     crs: int or str
             the desired output CRS (default: 4326)
 
@@ -38,7 +38,7 @@ def read_shp(filename: str | pathlib.PosixPath | pathlib.Path,
              crs: int | str = None
              ) -> geopandas.GeoDataFrame:
     """
-    Read a file into a GeoDataFrame, reproject it to the desired CRS and return it.
+    Read a shp file into a GeoDataFrame, reproject it to the desired CRS and return it.
 
     Parameters
     ----------
@@ -94,8 +94,7 @@ def read_parquet(
         filename: str | pathlib.PosixPath | pathlib.Path
 ) -> pd.DataFrame:
     """
-    Read the Telia's dataset, add the geometry of the grid and return
-    the data into a GeoDataFrame.
+    Read the Telia's dataset and return the data into a DataFrame.
 
     Parameters
     ----------
@@ -105,7 +104,7 @@ def read_parquet(
     Returns
     -------
     pd.DataFrame
-            Telia's data with the associated geometry
+            Telia's data
     """
     filename = pathlib.Path(filename)
     df = duckdb.sql(f"""SELECT
