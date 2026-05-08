@@ -60,6 +60,8 @@ def read_Uusimaa(
 
     Parameters
     ----------
+    sub_area: geopandas.GeoDataFrame
+            municipalities to extract, with geometry
     time_period: tuple of int
             starting hour and ending hour to extract
     month: int
@@ -131,6 +133,8 @@ def read_South_Karelia(
 
     Parameters
     ----------
+    sub_area: geopandas.GeoDataFrame
+            municipalities to extract, with geometry
     time_period: tuple of int
             starting hour and ending hour to extract
     month: int
@@ -188,23 +192,20 @@ def read_South_Karelia(
 # --------------------------------------------------------------------
 def average_population_density(
         gdf: geopandas.GeoDataFrame,
-        time_period: tuple[int, int] = (0, 24),
 ) -> geopandas.GeoDataFrame:
     """
-    Extract the subset of the Telia data of interest.
+    Estimate the average population density.
 
     Parameters
     ----------
     gdf: geopandas.GeoDataFrame
             Telia's data for the region of interest with
             the associated geometry
-    time_period: tuple of int
-            starting hour and ending hour to extract
 
     Returns
     -------
     geopandas.GeoDataFrame
-            subset of Telia data
+            population density
     """
     print('    Derive the population density')
     visits = gdf[ENTRIES_VISITS + ['location_id', 'geometry']]
@@ -231,11 +232,12 @@ def population_density_capital_area(
         download_osm: bool = False
 ) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
     """
-    Read the Telia's dataset and extract the data corresponding to
-    the area surrounding Lappeenranta.
+    Derived the population density in the capital area, based on Telia 'visits' data.
 
     Parameters
     ----------
+    sub_area: geopandas.GeoDataFrame
+            municipalities to extract, with geometry
     time_period: tuple of int
             starting hour and ending hour to extract
     month: int
@@ -278,11 +280,12 @@ def population_density_Lappeenranta(
         download_osm: bool = False
 ) -> tuple[geopandas.GeoDataFrame, MultiDiGraph]:
     """
-    Read the Telia's dataset and extract the data corresponding to
-    the area surrounding Lappeenranta.
+    Derived the population density in the area surrounding Lappeenranta, based on Telia 'visits' data.
 
     Parameters
     ----------
+    sub_area: geopandas.GeoDataFrame
+            municipalities to extract, with geometry
     time_period: tuple of int
             starting hour and ending hour to extract
     month: int
@@ -309,7 +312,7 @@ def population_density_Lappeenranta(
                                               weekdays=weekdays, crs=crs, download_osm=download_osm)
 
     print('  Derive population density')
-    population_density = average_population_density(sub_telia, time_period=time_period)
+    population_density = average_population_density(sub_telia)
 
     return population_density, osm_graph
 

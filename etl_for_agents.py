@@ -43,6 +43,8 @@ def export_data(
             subset of Telia data
     graph: MultiDiGraph
             OpenStreetMap graph for the area covered by the return Telia data
+    sub_area: geopandas.GeoDataFrame
+            municipalities to extract, with geometry
     outfile_pop_dens: str or pathlib.PosixPath or pathlib.Path
             path of the output file for the population density data
     outfile_osm: str or pathlib.PosixPath or pathlib.Path
@@ -58,7 +60,7 @@ def export_data(
     gdf.to_file(str(outfile_pop_dens) + "_population+cars.gpkg")
 
     print("    Export agents")
-    export_agents(gdf, sub_area, outfile_pop_dens, CRS)
+    export_agents(gdf, sub_area, outfile_pop_dens, CRS, weekdays)
 
     if graph is not None:
         print("    Export OSM data")

@@ -113,6 +113,8 @@ def read_South_Karelia(
 
     Parameters
     ----------
+    sub_area: geopandas.GeoDataFrame
+            municipalities to extract, with geometry
     month: int
             month of interest
     season: str
@@ -168,10 +170,9 @@ def baseline_number_cars(
 
     Parameters
     ----------
-    weekdays: bool
-            specify whether to extract the weekdays or the weekend
-    crs: int or str
-            the desired output CRS (default: 3067)
+    population_night: geopandas.GeoDataFrame
+            average population density between 22:00 and 6:00, with
+            the associated geometry
 
     Returns
     -------
@@ -199,12 +200,13 @@ def average_number_cars(
     df: pd.DataFrame
             Telia's data for the surroundings of Lappeenranta with
             the associated geometry
+    population_night: geopandas.GeoDataFrame
+            average population density between 22:00 and 6:00, with
+            the associated geometry
     time_period: tuple of int
             starting hour and ending hour to extract
     weekdays: bool
             specify whether to extract the weekdays or the weekend
-    crs: int or str
-            the desired output CRS (default: 3067)
 
     Returns
     -------
@@ -285,11 +287,15 @@ def number_cars_Lappeenranta(
         crs: int | str = 3067,
 ) -> geopandas.GeoDataFrame:
     """
-    Read the Telia's dataset and extract the data corresponding to
-    the area surrounding Lappeenranta.
+    Derived the number of cars per cell in the area surrounding Lappeenranta, based on Telia 'trips' data.
 
     Parameters
     ----------
+    sub_area: geopandas.GeoDataFrame
+            municipalities to extract, with geometry
+    population_night: geopandas.GeoDataFrame
+            average population density between 22:00 and 6:00, with
+            the associated geometry
     time_period: tuple of int
             starting hour and ending hour to extract
     month: int
@@ -304,7 +310,7 @@ def number_cars_Lappeenranta(
     Returns
     -------
     geopandas.GeoDataFrame
-            Telia's data for the surroundings of Lappeenranta with
+            number of cars per cell in the surroundings of Lappeenranta, with
             the associated geometry
     """
     print('  Read data')
@@ -312,7 +318,8 @@ def number_cars_Lappeenranta(
     sub_telia = read_South_Karelia(sub_area, month=month, season=season, crs=crs)
 
     print('  Derive number of cars')
-    number_cars = average_number_cars(sub_telia, population_night=population_night, time_period=time_period)
+    number_cars = average_number_cars(sub_telia, population_night=population_night,
+                                      time_period=time_period, weekdays=weekdays)
 
     return number_cars
 
