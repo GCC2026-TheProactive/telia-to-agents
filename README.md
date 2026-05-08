@@ -15,3 +15,13 @@ The project is based on Python 3.12 and the required packages are compiled in
 `environment.yml`. We recommand to use conda:
 
     $ conda env create -f environment.yml
+
+## Main components
+
+### Population density
+
+### Number of cars
+
+### Creation of the agents
+
+## Run
