@@ -318,7 +318,8 @@ def number_cars_Lappeenranta(
     sub_telia = read_South_Karelia(sub_area, month=month, season=season, crs=crs)
 
     print('  Derive number of cars')
-    number_cars = average_number_cars(sub_telia, population_night=population_night, time_period=time_period)
+    number_cars = average_number_cars(sub_telia, population_night=population_night,
+                                      time_period=time_period, weekdays=weekdays)
 
     return number_cars
 

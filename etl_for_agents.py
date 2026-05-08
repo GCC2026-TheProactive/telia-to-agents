@@ -60,7 +60,7 @@ def export_data(
     gdf.to_file(str(outfile_pop_dens) + "_population+cars.gpkg")
 
     print("    Export agents")
-    export_agents(gdf, sub_area, outfile_pop_dens, CRS)
+    export_agents(gdf, sub_area, outfile_pop_dens, CRS, weekdays)
 
     if graph is not None:
         print("    Export OSM data")

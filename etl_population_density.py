@@ -312,7 +312,7 @@ def population_density_Lappeenranta(
                                               weekdays=weekdays, crs=crs, download_osm=download_osm)
 
     print('  Derive population density')
-    population_density = average_population_density(sub_telia, time_period=time_period)
+    population_density = average_population_density(sub_telia)
 
     return population_density, osm_graph
 
