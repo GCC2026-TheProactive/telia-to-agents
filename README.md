@@ -69,3 +69,8 @@ the number of persons in the cell.
 * into a .csv file.
 
 ## Run
+
+The parameters for the model and the ETL pipeline are contained in `constants.py`.
+To run the ETL pipeline, you can simply run the following command.
+
+    $ python etl_for_agents.py
