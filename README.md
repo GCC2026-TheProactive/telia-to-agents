@@ -74,3 +74,10 @@ The parameters for the model and the ETL pipeline are contained in `constants.py
 To run the ETL pipeline, you can simply run the following command.
 
     $ python etl_for_agents.py
+
+## Credit and usage
+
+The repository is open-source. Nevertheless, we would appreciate to be acknowledged if use
+is made of the pipeline.
+
+Credits: Anastasiia Ershova, Hafiza Aisha Khalid, Quentin Salomé, Sanam Motlaghzadeh
