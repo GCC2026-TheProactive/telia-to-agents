@@ -18,6 +18,10 @@ The project is based on Python 3.12 and the required packages are compiled in
 
 ## Main components
 
+The ETL pipeline is divided into three parts. First, the population density is derived
+using the Telia "visits" dataset. Second, the number of cars is estimated using the
+Telia "trips" dataset. Finally, the outputs are combined and the agents are computed.
+
 ### Population density
 
 ### Number of cars
