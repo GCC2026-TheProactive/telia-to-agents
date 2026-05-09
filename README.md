@@ -24,6 +24,15 @@ Telia "trips" dataset. Finally, the outputs are combined and the agents are comp
 
 ### Population density
 
+* Read the Telia data
+* Extract a given month or season (e.g. January, spring)
+* Extract all the rows corresponding to a given time range (e.g. 15:00-17:00)
+* Add the geometry information to the Telia data and extract the area or municipalities
+of interest
+* Compute the average number of visits in each cell over the time range
+
+The different steps are included in `etl_population_density.py`
+
 ### Number of cars
 
 ### Creation of the agents
