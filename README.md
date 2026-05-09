@@ -27,16 +27,18 @@ for the area or municipalities of interest.
 
 ### Population density
 
-* Read the Telia data
+The different steps are included in `etl_population_density.py` and summarized below:
+
+* Read the Telia "visits" data
 * Extract a given month or season (e.g. January, spring)
 * Extract all the rows corresponding to a given time range (e.g. 15:00-17:00)
 * Add the geometry information to the Telia data and extract the area or municipalities
 of interest
 * Compute the average number of visits in each cell over the time range
 
-The different steps are included in `etl_population_density.py`
-
 ### Number of cars
+
+The different steps are included in `etl_number_cars.py` and summarized below:
 
 * Read the Telia "trips" data
 * Extract a given month or season (e.g. January, spring)
@@ -48,8 +50,6 @@ municipalities of interest
 using an average of 0.6 cars per person 
 * Compute the average number of cars entering and leaving each cell since 6:00, and
 derive the average number of cars at a given time.
-
-The different steps are included in `etl_number_cars.py`
 
 ### Creation of the agents
 
