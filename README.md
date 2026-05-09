@@ -50,4 +50,19 @@ The different steps are included in `etl_number_cars.py`
 
 ### Creation of the agents
 
+The agents are produced cell by cell. The different steps are included in `etl_functions.py`
+and summarized below:
+
+* N positions are randomly selected within the intersection of the cell and the limits of
+the area of interest, where N is the number of persons in the cell.
+* Each agent is randomly assigned one of the N positions.
+* We first create the "car" agents, with a driver and X passengers. The number of passengers
+follow a Poisson's distribution, with an average of 0.3 passenger per car.
+* The remaining persons not assigned to a "car" agent are assigned to individual "walk"
+agents.
+* We ensure that the total number of persons associated to the agents is the same as
+the number of persons in the cell.
+* After making sure that the agents are projected to the correct CRS, they are exported
+* into a .csv file.
+
 ## Run
