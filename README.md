@@ -22,6 +22,9 @@ The ETL pipeline is divided into three parts. First, the population density is d
 using the Telia "visits" dataset. Second, the number of cars is estimated using the
 Telia "trips" dataset. Finally, the outputs are combined and the agents are computed.
 
+In addition to the agents, the pipeline also extract the route network from OpenStreetMap
+for the area or municipalities of interest.
+
 ### Population density
 
 * Read the Telia data
