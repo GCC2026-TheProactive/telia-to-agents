@@ -2,7 +2,6 @@ import pathlib
 
 import geopandas
 import osmnx
-from networkx.classes.multidigraph import MultiDiGraph
 
 from constants import *
 from etl_number_cars import average_number_bikes, number_cars_Lappeenranta
@@ -12,6 +11,38 @@ from geoanalysis_functions import read_shp
 
 ENTRIES_VISITS = ['visit_count', 'resident_visit_count', 'worker_visit_count',
                   'non_resident_non_worker_visit_count']
+
+
+# --------------------------------------------------------------------
+def download_OSM_graph(
+        sub_area: geopandas.GeoDataFrame,
+        *,
+        download_osm: bool = False,
+        outfile_osm: str | pathlib.PosixPath | pathlib.Path,
+):
+    """
+    Read the Telia's dataset and extract the data corresponding to
+    the area surrounding Lappeenranta.
+
+    Parameters
+    ----------
+    download_osm: bool
+            specify whether to download the OSM data (default: False)
+    """
+    if download_osm:
+        print("Download OSM road network")
+        osmnx.settings.all_oneway = True
+        graph = osmnx.graph.graph_from_polygon(sub_area.to_crs("EPSG:4326").geometry.union_all(), simplify=False)
+        # osmnx.io.save_graphml(graph, filepath=OUTPUT_DIRECTORY / "Lappeenranta_osm.graphml")
+        # osmnx.io.save_graph_geopackage(graph, filepath=OUTPUT_DIRECTORY / "Lappeenranta_osm.gpkg")
+
+        print("    Export OSM data")
+        projected_graph = osmnx.projection.project_graph(graph, to_crs=f"EPSG:{CRS}")
+        osmnx.io.save_graph_xml(projected_graph, filepath=outfile_osm)
+    else:
+        graph = None
+
+    return
 
 
 # --------------------------------------------------------------------
@@ -28,10 +59,8 @@ def merge_datasets(
 # --------------------------------------------------------------------
 def export_data(
         gdf: geopandas.GeoDataFrame,
-        graph: MultiDiGraph | None,
         sub_area: geopandas.GeoDataFrame,
         outfile_pop_dens: str | pathlib.PosixPath | pathlib.Path,
-        outfile_osm: str | pathlib.PosixPath | pathlib.Path,
         weekdays: bool = True
 ) -> None:
     """
@@ -41,14 +70,10 @@ def export_data(
     ----------
     gdf: geopandas.GeoDataFrame
             subset of Telia data
-    graph: MultiDiGraph
-            OpenStreetMap graph for the area covered by the return Telia data
     sub_area: geopandas.GeoDataFrame
             municipalities to extract, with geometry
     outfile_pop_dens: str or pathlib.PosixPath or pathlib.Path
             path of the output file for the population density data
-    outfile_osm: str or pathlib.PosixPath or pathlib.Path
-            path of the output file for the OpenStreetMap data
     weekdays: bool
             specify whether to extract the weekdays or the weekend
 
@@ -61,12 +86,6 @@ def export_data(
 
     print("    Export agents")
     export_agents(gdf, sub_area, outfile_pop_dens, CRS, weekdays)
-
-    if graph is not None:
-        print("    Export OSM data")
-        osmnx.settings.all_oneway = True
-        projected_graph = osmnx.projection.project_graph(graph, to_crs=f"EPSG:{CRS}")
-        osmnx.io.save_graph_xml(projected_graph, filepath=outfile_osm)
 
     return
 
@@ -81,14 +100,14 @@ municipalities = read_shp(MUNICIPALITIES_DATA, crs=CRS)
 municipalities = municipalities[municipalities['NAMEFIN'].isin(SOUTH_KARELIA)]
 
 print('Population density')
-population_density, osm_graph = population_density_Lappeenranta(municipalities,
-                                                                time_period=time_period, month=month, season=season,
-                                                                weekdays=WEEKDAYS, crs=CRS, download_osm=DOWNLOAD_OSM)
+population_density = population_density_Lappeenranta(municipalities,
+                                                     time_period=time_period, month=month, season=season,
+                                                     weekdays=WEEKDAYS, crs=CRS)
 
 print('Population density by night')
 population_night = population_density_Lappeenranta(municipalities,
-                                                   time_period=(22,6), month=month, season=season,
-                                                   weekdays=WEEKDAYS, crs=CRS)[0]
+                                                   time_period=(22, 6), month=month, season=season,
+                                                   weekdays=WEEKDAYS, crs=CRS)
 
 print('Distribution of cars')
 number_cars = number_cars_Lappeenranta(municipalities,
@@ -96,9 +115,13 @@ number_cars = number_cars_Lappeenranta(municipalities,
                                        time_period=time_period, month=month, season=season,
                                        weekdays=WEEKDAYS, crs=CRS)
 
+download_OSM_graph(municipalities, download_osm=DOWNLOAD_OSM,
+                   outfile_osm=OUTPUT_DIRECTORY / "South_Karelia.osm")
+
 print("Combine the population density and number of cars")
 population_with_cars = merge_datasets(population_density, number_cars)
 
 print('Export data')
-export_data(population_with_cars, osm_graph, municipalities, outfile_pop_dens=OUTPUT_DIRECTORY / "South_Karelia",
-            outfile_osm=OUTPUT_DIRECTORY / "South_Karelia.osm", weekdays=WEEKDAYS)
+export_data(population_with_cars, municipalities,
+            outfile_pop_dens=OUTPUT_DIRECTORY / "South_Karelia",
+            weekdays=WEEKDAYS)
